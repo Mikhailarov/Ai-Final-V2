@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI & ML Exam Portal (ข้อกา & ข้อเขียน)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- KaTeX for Mathematics Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" 
+            onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+        code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
+        /* ซ่อน Scrollbar ของแท็บ */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-900 text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- แถบเมนูหลักด้านบนสุดสำหรับสลับหน้า (ข้อกา vs ข้อเขียน) -->
+    <header class="h-14 bg-slate-950 text-white flex-shrink-0 flex items-center justify-between px-4 sm:px-6 border-b border-slate-800 z-50 shadow-md">
+        <div class="flex items-center gap-2">
+            <span class="text-xl">📚</span>
+            <span class="font-bold text-sm sm:text-base tracking-wide">AI Exam Portal</span>
+        </div>
+        
+        <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <button id="btn-mode-choice" onclick="switchMainPortal('choice')" class="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-indigo-600 text-white shadow-sm">
+                <span>📝</span> ข้อกา (Quiz)
+            </button>
+            <button id="btn-mode-written" onclick="switchMainPortal('written')" class="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white">
+                <span>✍️</span> ข้อเขียน (Written Exam)
+            </button>
+        </div>
+    </header>
+
+    <!-- พื้นที่แสดงผลเนื้อหาหลัก -->
+    <div class="flex-1 relative overflow-hidden">
+
+        <!-- =========================================================================
+             หน้า: ข้อกา (จาก Exam.html)
+             ========================================================================= -->
+        <div id="view-choice" class="w-full h-full flex flex-col md:flex-row overflow-hidden bg-slate-50 text-slate-800">
+            <aside class="w-full md:w-72 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col h-auto md:h-full z-20 shadow-xl">
+                <div class="p-6 border-b border-slate-800">
+                    <h1 class="text-2xl font-bold text-white tracking-wide">ML Quiz</h1>
+                    <p class="text-sm text-slate-400 mt-1">คลังแบบทดสอบ Machine Learning</p>
+                </div>
+                <nav class="flex-1 overflow-x-auto md:overflow-y-auto p-4 flex md:flex-col gap-2" id="sidebar-nav">
+                    <!-- Navigation buttons will be generated here -->
+                </nav>
+            </aside>
+
+            <main class="flex-1 h-full overflow-y-auto relative p-4 md:p-8 flex justify-center">
+                <div class="max-w-3xl w-full flex flex-col">
+                    
+                    <!-- Quiz Header -->
+                    <header class="mb-6 flex justify-between items-end border-b border-slate-200 pb-4">
+                        <div>
+                            <h2 id="chapter-title" class="text-2xl md:text-3xl font-bold text-slate-800">Chapter Title</h2>
+                        </div>
+                        <div id="progress-container" class="text-right text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg shadow-sm">
+                            <span id="progress-text">Question 1 of X</span>
+                        </div>
+                    </header>
+
+                    <!-- Quiz Container -->
+                    <div id="quiz-container" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-10 flex-1 flex flex-col">
+                        <div class="flex-1">
+                            <h3 id="question-text" class="text-lg md:text-xl font-medium text-slate-800 mb-4 leading-relaxed">
+                                Question Text Goes Here
+                            </h3>
+                            
+                            <div id="question-html" class="mb-6 w-full overflow-x-auto">
+                                <!-- Custom HTML for questions like matrices will be injected here -->
+                            </div>
+
+                            <div id="options-container" class="flex flex-col gap-3">
+                                <!-- Options will be generated here -->
+                            </div>
+
+                            <!-- Explanation Card (Shown after answering) -->
+                            <div id="explanation-container" class="mt-6 p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm hidden">
+                                <span class="font-bold">คำอธิบาย: </span><span id="explanation-text"></span>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 pt-6 border-t border-slate-100 flex justify-end">
+                            <button id="next-btn" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed hidden" disabled>
+                                Next Question
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Container (Hidden by default) -->
+                    <div id="summary-container" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-8 md:p-12 text-center flex-1 flex flex-col justify-center items-center">
+                        <div class="text-6xl mb-4">🏆</div>
+                        <h2 class="text-3xl font-bold text-slate-800 mb-2">บททดสอบเสร็จสมบูรณ์!</h2>
+                        <p class="text-slate-500 mb-8">คุณได้ทำแบบทดสอบ <span id="summary-chapter-title" class="font-semibold"></span> เสร็จสิ้นแล้ว</p>
+                        
+                        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-8 w-full max-w-sm">
+                            <p class="text-sm text-slate-500 font-medium mb-1">คะแนนของคุณ</p>
+                            <div class="text-5xl font-extrabold text-indigo-600">
+                                <span id="score-display">0</span> <span class="text-2xl text-slate-400 font-medium">/ <span id="total-display">0</span></span>
+                            </div>
+                        </div>
+
+                        <button id="retry-btn" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-lg transition-all flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" /></svg>
+                            Retry Chapter
+                        </button>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+
+
+        <!-- =========================================================================
+             หน้า: ข้อเขียน (ปรับปรุงเนื้อหาครบทุกข้อ)
+             ========================================================================= -->
+        <div id="view-written" class="w-full h-full overflow-y-auto hidden bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
+            <!-- Header ข้อเขียน -->
+            <header class="sticky top-0 z-40 backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold flex items-center gap-2">
+                            <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+                            <span class="text-base sm:text-lg">AI Exam Master Guide (ข้อเขียน)</span>
+                        </div>
+                        <span class="hidden sm:inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300">
+                            ข้อ 2.1 - 2.6 (15 คะแนนเต็ม)
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="toggleAllSolutions()" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium flex items-center gap-1.5 transition-colors">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                            <span id="toggleAllText">เปิด/ปิดเฉลยทั้งหมด</span>
+                        </button>
+                        <button id="themeToggle" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
+                            <i data-lucide="moon" id="themeIcon" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Sticky Nav Tabs -->
+            <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-16 z-30">
+                <div class="max-w-6xl mx-auto px-4 sm:px-6">
+                    <nav class="flex space-x-2 overflow-x-auto py-2.5 no-scrollbar text-sm font-medium">
+                        <button onclick="switchTab('all')" id="tab-all" class="tab-btn px-3.5 py-1.5 rounded-lg whitespace-nowrap bg-sky-600 text-white shadow-sm">
+                            ดูข้อสอบทั้งหมด
+                        </button>
+                        <button onclick="switchTab('q21')" id="tab-q21" class="tab-btn px-3.5 py-1.5 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                            2.1 Confusion Matrix & Metrics
+                        </button>
+                        <button onclick="switchTab('q22')" id="tab-q22" class="tab-btn px-3.5 py-1.5 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                            2.2 Decision Tree
+                        </button>
+                        <button onclick="switchTab('q23')" id="tab-q23" class="tab-btn px-3.5 py-1.5 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                            2.3 Perceptron
+                        </button>
+                        <button onclick="switchTab('q24')" id="tab-q24" class="tab-btn px-3.5 py-1.5 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                            2.4 CNN vs FC (พร้อมข้อ 8 & 9)
+                        </button>
+                        <button onclick="switchTab('q25')" id="tab-q25" class="tab-btn px-3.5 py-1.5 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                            2.5 Generative AI (พร้อมข้อ 1 & 13)
+                        </button>
+                        <button onclick="switchTab('q26')" id="tab-q26" class="tab-btn px-3.5 py-1.5 rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                            2.6 AI Ethics
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Content Container ข้อเขียน -->
+            <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+
+                <!-- ข้อ 2.1 Confusion Matrix and Classification Metrics (เพิ่มครบ 6 ตัวชี้วัด) -->
+                <article id="card-q21" class="exam-card bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">Classification Evaluation</span>
+                            <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
+                                ข้อ 2.1 Confusion Matrix and Classification Metrics (3 คะแนน)
+                            </h2>
+                        </div>
+                        <span class="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                            3 คะแนน
+                        </span>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-700/60 mb-6">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-3">
+                            <i data-lucide="help-circle" class="w-5 h-5 text-sky-500"></i> โจทย์:
+                        </h3>
+                        <p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                            ระบบ AI วินิจฉัยโรคปอดอักเสบจากภาพ X-ray ทำการทดสอบกับภาพจำนวน 10 ภาพ โดยกำหนดให้ <strong>1 = เป็นโรค (Positive)</strong> และ <strong>0 = ไม่เป็นโรค (Negative)</strong>
+                        </p>
+
+                        <div class="mt-4 overflow-x-auto">
+                            <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 text-xs sm:text-sm font-mono">
+                                <thead>
+                                    <tr class="bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2 text-left font-sans">ลำดับภาพที่</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">1</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">2</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">3</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">4</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">5</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">6</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">7</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">8</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">9</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">10</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-semibold text-left font-sans text-sky-700 dark:text-sky-300 bg-sky-50/50 dark:bg-sky-950/20">ค่าความจริง (Actual)</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-sky-600">1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">0</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-sky-600">1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-sky-600">1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">0</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">0</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-sky-600">1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">0</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-sky-600">1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-semibold text-left font-sans text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20">ผลทำนาย (Predicted)</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-emerald-600">1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">0</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-rose-500">0</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-emerald-600">1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-amber-500">1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">0</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-emerald-600">1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">0</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-emerald-600">1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-amber-500">1</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                            <p><strong>1.</strong> จงสร้างตาราง Confusion Matrix จากข้อมูลที่กำหนดให้</p>
+                            <p><strong>2.</strong> จงแสดงวิธีทำเพื่อคำนวณหาค่า Accuracy และชุดตัวชี้วัดสำคัญ (Sensitivity / Specificity / Precision / Recall / F1 Score)</p>
+                            <p><strong>3.</strong> <strong>วิเคราะห์:</strong> หากในทางการแพทย์ การ "พลาดการตรวจจับผู้ป่วยที่เป็นโรคร้ายแรง (ตรวจแล้วบอกว่าไม่เป็น ทั้งที่เป็น)" ก่อให้เกิดความสูญเสียถึงชีวิตได้ เราควรเลือกใช้ Metric ใด (Precision, Recall หรือ Specificity) มาเป็นเกณฑ์หลักในการวัดประสิทธิภาพเพื่อลดปัญหานี้ให้เหลือน้อยที่สุด? จงอธิบายเหตุผลประกอบ</p>
+                        </div>
+
+                        <!-- สูตรตัวชี้วัดครบ 6 ตัว -->
+                        <div class="mt-5 p-4 rounded-lg bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900">
+                            <div class="text-xs font-bold text-sky-800 dark:text-sky-300 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                                <i data-lucide="function-square" class="w-4 h-4"></i> สรุปสูตร Classification Metrics ครบทั้ง 6 ตัวชี้วัด:
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-center text-xs sm:text-sm">
+                                <div class="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-sky-100 dark:border-sky-900">
+                                    <span class="font-bold text-sky-600 block text-xs mb-1">1. Accuracy (ความถูกต้องรวม)</span>
+                                    $$Accuracy = \frac{TP + TN}{TP + TN + FP + FN}$$
+                                </div>
+                                <div class="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-sky-100 dark:border-sky-900">
+                                    <span class="font-bold text-emerald-600 block text-xs mb-1">2. Sensitivity / Recall (ความไว)</span>
+                                    $$Recall = \frac{TP}{TP + FN}$$
+                                </div>
+                                <div class="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-sky-100 dark:border-sky-900">
+                                    <span class="font-bold text-cyan-600 block text-xs mb-1">3. Specificity (ความจำเพาะ)</span>
+                                    $$Specificity = \frac{TN}{TN + FP}$$
+                                </div>
+                                <div class="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-sky-100 dark:border-sky-900">
+                                    <span class="font-bold text-amber-600 block text-xs mb-1">4. Precision (ความแม่นยำ)</span>
+                                    $$Precision = \frac{TP}{TP + FP}$$
+                                </div>
+                                <div class="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-sky-100 dark:border-sky-900 sm:col-span-2 lg:col-span-2">
+                                    <span class="font-bold text-purple-600 block text-xs mb-1">5. F1 Score (Harmonic Mean ระหว่าง Precision & Recall)</span>
+                                    $$F1 = 2 \times \frac{Precision \times Recall}{Precision + Recall} = \frac{2TP}{2TP + FP + FN}$$
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleSection('sol-21')" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm font-semibold flex items-center justify-between transition-colors">
+                        <span class="flex items-center gap-2 text-sky-600 dark:text-sky-400">
+                            <i data-lucide="book-open-check" class="w-4 h-4"></i> วิธีทำ วิธีคิด และเฉลยละเอียด
+                        </span>
+                        <i data-lucide="chevron-down" id="icon-sol-21" class="w-5 h-5 transition-transform"></i>
+                    </button>
+
+                    <div id="sol-21" class="mt-5 space-y-6">
+                        <div class="p-5 rounded-xl border border-indigo-100 dark:border-indigo-950 bg-indigo-50/30 dark:bg-indigo-950/20">
+                            <h4 class="font-bold text-sm text-indigo-900 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                                <i data-lucide="calculator" class="w-4 h-4"></i> วิธีทำและวิธีคิด:
+                            </h4>
+                            <div class="space-y-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                                <p><strong>1. สร้าง Confusion Matrix:</strong> จับคู่ข้อมูล Actual และ Predicted ทีละตำแหน่ง</p>
+                                <ul class="list-disc list-inside space-y-1 pl-2 text-xs sm:text-sm">
+                                    <li><strong>(A=1, P=1) ทายถูกว่าเป็นโรค &rarr; True Positive (TP) = 4 ภาพ</strong> (ลำดับที่ 1, 4, 7, 9)</li>
+                                    <li><strong>(A=0, P=0) ทายถูกว่าไม่เป็นโรค &rarr; True Negative (TN) = 3 ภาพ</strong> (ลำดับที่ 2, 6, 8)</li>
+                                    <li><strong>(A=0, P=1) ทายผิดว่าเป็นโรค &rarr; False Positive (FP) = 2 ภาพ</strong> (ลำดับที่ 5, 10)</li>
+                                    <li><strong>(A=1, P=0) ทายผิดว่าไม่เป็นโรค &rarr; False Negative (FN) = 1 ภาพ</strong> (ลำดับที่ 3)</li>
+                                </ul>
+                                
+                                <div class="pt-3">
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200">2. การคำนวณ Metrics ทั้ง 6 ตัวชี้วัดจากโจทย์:</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 font-mono text-xs sm:text-sm">
+                                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                            <strong>Accuracy:</strong>
+                                            $$\frac{4 + 3}{4 + 3 + 2 + 1} = \frac{7}{10} = 0.70 \text{ (70.0\%)}$$
+                                        </div>
+                                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                            <strong>Recall / Sensitivity:</strong>
+                                            $$\frac{4}{4 + 1} = \frac{4}{5} = 0.80 \text{ (80.0\%)}$$
+                                        </div>
+                                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                            <strong>Specificity:</strong>
+                                            $$\frac{3}{3 + 2} = \frac{3}{5} = 0.60 \text{ (60.0\%)}$$
+                                        </div>
+                                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                            <strong>Precision:</strong>
+                                            $$\frac{4}{4 + 2} = \frac{4}{6} \approx 0.667 \text{ (66.7\%)}$$
+                                        </div>
+                                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 md:col-span-2">
+                                            <strong>F1 Score:</strong>
+                                            $$2 \times \frac{0.667 \times 0.80}{0.667 + 0.80} = \frac{2(4)}{2(4) + 2 + 1} = \frac{8}{11} \approx 0.727 \text{ (72.7\%)}$$
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-5 rounded-xl border-2 border-emerald-500/30 dark:border-emerald-500/20 bg-emerald-50/20 dark:bg-emerald-950/20">
+                            <h4 class="font-bold text-emerald-800 dark:text-emerald-300 mb-4 flex items-center gap-2">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> เฉลย:
+                            </h4>
+
+                            <div class="space-y-5 text-sm">
+                                <div>
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200 mb-2">1. ตาราง Confusion Matrix</p>
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                                            <thead>
+                                                <tr class="bg-slate-100 dark:bg-slate-800 text-xs">
+                                                    <th class="border border-slate-300 dark:border-slate-700 p-2.5">Actual \ Predicted</th>
+                                                    <th class="border border-slate-300 dark:border-slate-700 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold">ทายว่าเป็นโรค (1)</th>
+                                                    <th class="border border-slate-300 dark:border-slate-700 p-2.5 bg-slate-50 dark:bg-slate-800/80">ทายว่าไม่เป็นโรค (0)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <th class="border border-slate-300 dark:border-slate-700 p-3 text-left font-semibold text-xs bg-slate-50 dark:bg-slate-800/50">เป็นโรคจริง (1)</th>
+                                                    <td class="border border-slate-300 dark:border-slate-700 p-3 font-bold text-emerald-600 text-base">TP = 4</td>
+                                                    <td class="border border-slate-300 dark:border-slate-700 p-3 font-bold text-rose-500 text-base">FN = 1</td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="border border-slate-300 dark:border-slate-700 p-3 text-left font-semibold text-xs bg-slate-50 dark:bg-slate-800/50">ไม่เป็นโรคจริง (0)</th>
+                                                    <td class="border border-slate-300 dark:border-slate-700 p-3 font-bold text-amber-500 text-base">FP = 2</td>
+                                                    <td class="border border-slate-300 dark:border-slate-700 p-3 font-bold text-slate-600 dark:text-slate-300 text-base">TN = 3</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200 mb-2">2. สรุปค่า Metrics ทั้งหมด:</p>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-xs sm:text-sm">
+                                        <div class="p-2 rounded bg-slate-50 dark:bg-slate-800">Accuracy: <strong class="text-emerald-600">0.70 (70%)</strong></div>
+                                        <div class="p-2 rounded bg-slate-50 dark:bg-slate-800">Recall (Sens.): <strong class="text-emerald-600">0.80 (80%)</strong></div>
+                                        <div class="p-2 rounded bg-slate-50 dark:bg-slate-800">Specificity: <strong class="text-emerald-600">0.60 (60%)</strong></div>
+                                        <div class="p-2 rounded bg-slate-50 dark:bg-slate-800">Precision: <strong class="text-emerald-600">0.67 (66.7%)</strong></div>
+                                        <div class="p-2 rounded bg-slate-50 dark:bg-slate-800 col-span-2">F1 Score: <strong class="text-purple-600">0.727 (72.7%)</strong></div>
+                                    </div>
+                                </div>
+
+                                <div class="p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2">
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200">3. การวิเคราะห์ Metric:</p>
+                                    <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                                        ควรใช้ <strong class="text-emerald-600 dark:text-emerald-400">Recall (Sensitivity)</strong> เป็นเกณฑ์หลักในการวัดประสิทธิภาพ เนื่องจากในทางการแพทย์ การพลาดการตรวจจับผู้ป่วยตัวจริง (False Negative: FN) มีผลกระทบร้ายแรงถึงชีวิต การทำให้ค่า Recall สูงที่สุดจะเป็นการรับประกันว่าสัดส่วนของ False Negative จะเหลือน้อยที่สุด และสามารถค้นหาผู้ป่วยตัวจริงได้ครอบคลุมที่สุด
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- ข้อ 2.2 Decision Tree -->
+                <article id="card-q22" class="exam-card bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">Supervised Learning</span>
+                            <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
+                                ข้อ 2.2 Decision Tree: การสร้างเงื่อนไขตัดสินใจ (3 คะแนน)
+                            </h2>
+                        </div>
+                        <span class="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                            3 คะแนน
+                        </span>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-700/60 mb-6">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-3">
+                            <i data-lucide="help-circle" class="w-5 h-5 text-sky-500"></i> โจทย์:
+                        </h3>
+                        <p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                            ข้อมูลผลการเรียนของนักศึกษา 5 คน ประกอบด้วยคะแนน Attend, Quiz, Csystem, Midterm และเกรดที่ได้ (Target)
+                        </p>
+                        <div class="mt-3 overflow-x-auto">
+                            <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 text-xs sm:text-sm">
+                                <thead>
+                                    <tr class="bg-slate-200/60 dark:bg-slate-800">
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">นักศึกษา</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">Attend</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">Quiz</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2">Csystem</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 font-bold">Midterm</th>
+                                        <th class="border border-slate-300 dark:border-slate-700 p-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-bold">Grade (Target)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="font-mono">
+                                    <tr>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-sans">Student 1</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">10</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">10</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">10</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-amber-600">20</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-emerald-600">Grade A</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-sans">Student 2</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">10</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">8</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">9</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-amber-600">15</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-emerald-600">Grade B</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-sans">Student 3</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">8</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">7</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">8</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-amber-600">10</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-emerald-600">Grade C</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-sans">Student 4</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">5</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">4</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">5</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-amber-600">5</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-emerald-600">Grade D</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-sans">Student 5</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">10</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">9</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2">9</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-amber-600">18</td>
+                                        <td class="border border-slate-300 dark:border-slate-700 p-2 font-bold text-emerald-600">Grade A</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                            <p><strong>1.</strong> จงเขียนโครงสร้างกฎการตัดสินใจ (Decision Criteria) แบบมีลำดับชั้น เพื่อพยากรณ์เกรด</p>
+                            <p><strong>2.</strong> จงอธิบายว่าเหตุใดจึงเลือก Feature นั้นมาเป็นเกณฑ์</p>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleSection('sol-22')" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm font-semibold flex items-center justify-between transition-colors">
+                        <span class="flex items-center gap-2 text-sky-600 dark:text-sky-400">
+                            <i data-lucide="book-open-check" class="w-4 h-4"></i> วิธีทำ วิธีคิด และเฉลยละเอียด
+                        </span>
+                        <i data-lucide="chevron-down" id="icon-sol-22" class="w-5 h-5 transition-transform"></i>
+                    </button>
+
+                    <div id="sol-22" class="mt-5 space-y-6">
+                        <div class="p-5 rounded-xl border border-indigo-100 dark:border-indigo-950 bg-indigo-50/30 dark:bg-indigo-950/20">
+                            <h4 class="font-bold text-sm text-indigo-900 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                                <i data-lucide="calculator" class="w-4 h-4"></i> วิธีทำและวิธีคิด:
+                            </h4>
+                            <div class="text-sm leading-relaxed text-slate-700 dark:text-slate-300 space-y-2">
+                                <p>1. สังเกตข้อมูลพบว่าคะแนน Midterm สามารถใช้แบ่งเกรด A, B, C, D ออกจากกันได้อย่างเด็ดขาด โดยไม่ทับซ้อนกันเลย</p>
+                                <ul class="list-disc list-inside space-y-1 pl-2 text-xs sm:text-sm">
+                                    <li>Midterm ตั้งแต่ 18 ขึ้นไป ได้เกรด A</li>
+                                    <li>Midterm ตั้งแต่ 15-17 ได้เกรด B</li>
+                                    <li>Midterm ตั้งแต่ 10-14 ได้เกรด C</li>
+                                    <li>Midterm ต่ำกว่า 10 ได้เกรด D</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="p-5 rounded-xl border-2 border-emerald-500/30 dark:border-emerald-500/20 bg-emerald-50/20 dark:bg-emerald-950/20">
+                            <h4 class="font-bold text-emerald-800 dark:text-emerald-300 mb-4 flex items-center gap-2">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> เฉลย:
+                            </h4>
+                            <div class="space-y-4 text-sm text-slate-700 dark:text-slate-300">
+                                <div>
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200 mb-2">1. กฎการตัดสินใจ (Decision Criteria):</p>
+                                    <div class="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3 font-mono text-xs sm:text-sm">
+                                        <div class="p-2.5 rounded bg-sky-50 dark:bg-sky-950/40 border-l-4 border-sky-500">
+                                            <p class="font-bold text-sky-800 dark:text-sky-300 font-sans">• โหนดราก (Root Node): Midterm $\ge$ 18 ?</p>
+                                            <p class="pl-4 text-emerald-600 dark:text-emerald-400 mt-1">- ใช่ &rarr; Grade A</p>
+                                            <p class="pl-4 text-slate-500 mt-0.5">- ไม่ใช่ &rarr; ไปยังโหนดถัดไป</p>
+                                        </div>
+
+                                        <div class="p-2.5 rounded bg-amber-50 dark:bg-amber-950/40 border-l-4 border-amber-500 ml-3 sm:ml-6">
+                                            <p class="font-bold text-amber-800 dark:text-amber-300 font-sans">• โหนดภายใน 1: Midterm $\ge$ 15 ?</p>
+                                            <p class="pl-4 text-emerald-600 dark:text-emerald-400 mt-1">- ใช่ &rarr; Grade B</p>
+                                            <p class="pl-4 text-slate-500 mt-0.5">- ไม่ใช่ &rarr; ไปยังโหนดถัดไป</p>
+                                        </div>
+
+                                        <div class="p-2.5 rounded bg-indigo-50 dark:bg-indigo-950/40 border-l-4 border-indigo-500 ml-6 sm:ml-12">
+                                            <p class="font-bold text-indigo-800 dark:text-indigo-300 font-sans">• โหนดภายใน 2: Midterm $\ge$ 10 ?</p>
+                                            <p class="pl-4 text-emerald-600 dark:text-emerald-400 mt-1">- ใช่ &rarr; Grade C</p>
+                                            <p class="pl-4 text-rose-600 dark:text-rose-400 mt-0.5">- ไม่ใช่ &rarr; Grade D</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2">
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200">2. เหตุผลที่เลือกคะแนน Midterm เป็นเกณฑ์:</p>
+                                    <p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                                        อัลกอริทึมต้นไม้ตัดสินใจจะเลือกคุณลักษณะ (Feature) ที่ทำให้ "การแบ่งข้อมูลมีความคล้ายคลึงกันมากที่สุด" หรือที่เรียกว่ามีความบริสุทธิ์ (Purity) สูงที่สุด การใช้เกณฑ์คะแนน Midterm และกำหนดจุดแบ่ง (Threshold) ดังกล่าว สามารถลดความไม่แน่นอน (Impurity) ภายในแต่ละโหนดได้อย่างสมบูรณ์แบบ ทำให้แต่ละโหนดใบ (Leaf Node) มีข้อมูลเพียงคลาสเดียวปะปนอยู่
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- ข้อ 2.3 Perceptron -->
+                <article id="card-q23" class="exam-card bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">Neural Networks</span>
+                            <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
+                                ข้อ 2.3 Single Layer Perceptron (3 คะแนน)
+                            </h2>
+                        </div>
+                        <span class="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                            3 คะแนน
+                        </span>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-700/60 mb-6 space-y-4">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                            <i data-lucide="help-circle" class="w-5 h-5 text-sky-500"></i> โจทย์:
+                        </h3>
+                        
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">กำหนดข้อมูลสำหรับฝึกสอน (Training Data):</p>
+                            <ul class="list-disc list-inside space-y-1 text-sm font-mono text-slate-700 dark:text-slate-300 pl-2">
+                                <li>Sample 1: $X_1=1, X_2=1 \rightarrow Target(t)=1$</li>
+                                <li>Sample 2: $X_1=0, X_2=2 \rightarrow Target(t)=0$</li>
+                                <li>Sample 3: $X_1=2, X_2=0 \rightarrow Target(t)=1$</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">กำหนดค่าเริ่มต้น:</p>
+                            <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono space-y-1">
+                                <p>• $w_1=0.5, w_2=0.5, b=-0.5, \eta=0.1$</p>
+                                <p>• Activation Function (Step Function): $y=1$ หาก $z \ge 0$, และ $y=0$ หาก $z < 0$</p>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-200 dark:border-slate-700 space-y-1.5 text-sm text-slate-700 dark:text-slate-300">
+                            <p><strong>1.</strong> จงแสดงวิธีคำนวณผลทำนาย (Predicted Output) และปรับน้ำหนัก (Weight Update) สำหรับ Sample 1 และ Sample 2</p>
+                            <p><strong>2.</strong> เมื่อทำครบ 1 Epoch ต้องทำสิ่งใดต่อไป?</p>
+                        </div>
+
+                        <div class="p-4 rounded-lg bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900">
+                            <div class="text-xs font-bold text-sky-800 dark:text-sky-300 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                <i data-lucide="function-square" class="w-4 h-4"></i> สูตรที่โจทย์กำหนด:
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-center text-xs sm:text-sm font-mono">
+                                <div class="p-2 bg-white dark:bg-slate-900 rounded border border-sky-100 dark:border-sky-900">
+                                    $$z = (X_1 \cdot w_1) + (X_2 \cdot w_2) + b$$
+                                </div>
+                                <div class="p-2 bg-white dark:bg-slate-900 rounded border border-sky-100 dark:border-sky-900">
+                                    $$e = t - y$$
+                                </div>
+                                <div class="p-2 bg-white dark:bg-slate-900 rounded border border-sky-100 dark:border-sky-900">
+                                    $$w_{new} = w_{old} + (\eta \cdot e \cdot X)$$
+                                </div>
+                                <div class="p-2 bg-white dark:bg-slate-900 rounded border border-sky-100 dark:border-sky-900">
+                                    $$b_{new} = b_{old} + (\eta \cdot e)$$
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleSection('sol-23')" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm font-semibold flex items-center justify-between transition-colors">
+                        <span class="flex items-center gap-2 text-sky-600 dark:text-sky-400">
+                            <i data-lucide="book-open-check" class="w-4 h-4"></i> วิธีทำ วิธีคิด และเฉลยละเอียด
+                        </span>
+                        <i data-lucide="chevron-down" id="icon-sol-23" class="w-5 h-5 transition-transform"></i>
+                    </button>
+
+                    <div id="sol-23" class="mt-5 space-y-6">
+                        <div class="p-5 rounded-xl border border-indigo-100 dark:border-indigo-950 bg-indigo-50/30 dark:bg-indigo-950/20">
+                            <h4 class="font-bold text-sm text-indigo-900 dark:text-indigo-300 mb-4 flex items-center gap-2">
+                                <i data-lucide="calculator" class="w-4 h-4"></i> วิธีทำและวิธีคิด:
+                            </h4>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs sm:text-sm">
+                                <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                                    <span class="font-bold text-sky-600 block border-b pb-1 dark:border-slate-800">
+                                        Sample 1: ($X_1=1, X_2=1, t=1$)
+                                    </span>
+                                    <p>• <strong>หาผลรวม:</strong> $$z = (1)(0.5) + (1)(0.5) + (-0.5) = 0.5 + 0.5 - 0.5 = 0.5$$</p>
+                                    <p>• <strong>ผลทำนาย:</strong> $0.5 \ge 0$ ดังนั้น $y = 1$</p>
+                                    <p>• <strong>หาค่า Error:</strong> $e = 1 - 1 = 0$</p>
+                                    <p class="text-emerald-600 dark:text-emerald-400 font-semibold">• <strong>ปรับน้ำหนัก:</strong> Error = 0 น้ำหนักจึงคงเดิม</p>
+                                </div>
+
+                                <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                                    <span class="font-bold text-rose-600 block border-b pb-1 dark:border-slate-800">
+                                        Sample 2: ($X_1=0, X_2=2, t=0$) <span class="text-xs font-normal text-slate-500">(ใช้น้ำหนักเดิม)</span>
+                                    </span>
+                                    <p>• <strong>หาผลรวม:</strong> $$z = (0)(0.5) + (2)(0.5) + (-0.5) = 0 + 1 - 0.5 = 0.5$$</p>
+                                    <p>• <strong>ผลทำนาย:</strong> $0.5 \ge 0$ ดังนั้น $y = 1$</p>
+                                    <p>• <strong>หาค่า Error:</strong> $e = 0 - 1 = -1$</p>
+                                    <p>• <strong>ปรับน้ำหนัก:</strong></p>
+                                    <ul class="space-y-1 font-mono text-xs pl-3 border-l-2 border-rose-300 dark:border-rose-900">
+                                        <li>$w_{1(new)} = 0.5 + (0.1)(-1)(0) = \mathbf{0.5}$</li>
+                                        <li>$w_{2(new)} = 0.5 + (0.1)(-1)(2) = 0.5 - 0.2 = \mathbf{0.3}$</li>
+                                        <li>$b_{new} = -0.5 + (0.1)(-1) = \mathbf{-0.6}$</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-5 rounded-xl border-2 border-emerald-500/30 dark:border-emerald-500/20 bg-emerald-50/20 dark:bg-emerald-950/20 space-y-4">
+                            <h4 class="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> เฉลย:
+                            </h4>
+                            
+                            <div class="space-y-3 text-sm text-slate-700 dark:text-slate-300">
+                                <div>
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200 mb-1.5">1. ผลการคำนวณและอัปเดตน้ำหนัก</p>
+                                    <div class="space-y-2">
+                                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                            <strong>Sample 1:</strong> ผลทำนาย $y = 1$, ค่า Error $e = 0$ (ทายถูก) จึงไม่มีการปรับค่าน้ำหนัก คงเดิมที่ $w_1 = 0.5, w_2 = 0.5, b = -0.5$
+                                        </div>
+                                        <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                            <strong>Sample 2:</strong> ผลทำนาย $y = 1$, ค่า Error $e = -1$ (ทายผิด) จึงปรับค่าน้ำหนักใหม่ได้เป็น $w_1 = 0.5, w_2 = 0.3, b = -0.6$
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 space-y-1">
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200">2. กระบวนการเรียนรู้ลำดับถัดไป</p>
+                                    <p class="text-sm leading-relaxed">
+                                        เมื่อคำนวณครบ 3 Sample (จบ 1 Epoch) กระบวนการจะนำข้อมูลกลับมาวนซ้ำ (Loop) คำนวณใหม่ไปเรื่อยๆ จนกว่าค่า Error จะเป็น 0 (Converged) หรือหยุดเมื่อครบจำนวนรอบ (Epoch) ที่กำหนดไว้
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- ข้อ 2.4 CNN vs FC (เพิ่ม ข้อ 8 และ ข้อ 9 เรียบร้อย) -->
+                <article id="card-q24" class="exam-card bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">Computer Vision & Deep Learning</span>
+                            <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
+                                ข้อ 2.4 Convolutional Neural Network - CNN (รวมข้อสอบข้อ 8 และข้อ 9)
+                            </h2>
+                        </div>
+                        <span class="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                            โจทย์หลัก + ข้อ 8 + ข้อ 9
+                        </span>
+                    </div>
+
+                    <div class="space-y-4 mb-6">
+                        <!-- ส่วนโจทย์หลัก -->
+                        <div class="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-700/60">
+                            <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-2">
+                                <i data-lucide="help-circle" class="w-5 h-5 text-sky-500"></i> โจทย์หลัก 2.4:
+                            </h3>
+                            <p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                                การใช้ Fully Connected Network (FC) ประมวลผลภาพเกิดปัญหาอะไร? และ CNN ใช้ Filter (Kernel) แก้ปัญหานั้นและสกัดคุณลักษณะ (Feature Extraction) ได้ดีกว่าอย่างไร?
+                            </p>
+                        </div>
+
+                        <!-- เพิ่ม: โจทย์ข้อ 8 และข้อ 9 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-4 rounded-xl bg-sky-50/60 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-900">
+                                <span class="text-xs font-bold text-sky-700 dark:text-sky-400 uppercase">ข้อ 8 เพิ่มเติม</span>
+                                <p class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-1">
+                                    จงอธิบายลักษณะและการประยุกต์ใช้งานของ Feedforward Neural Networks (FNN), Convolutional Neural Networks (CNN) และ Recurrent Neural Networks (RNN)
+                                </p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900">
+                                <span class="text-xs font-bold text-purple-700 dark:text-purple-400 uppercase">ข้อ 9 เพิ่มเติม</span>
+                                <p class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-1">
+                                    เพราะเหตุใด CNN จึงได้รับความนิยมในงานประมวลผลภาพ
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleSection('sol-24')" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm font-semibold flex items-center justify-between transition-colors">
+                        <span class="flex items-center gap-2 text-sky-600 dark:text-sky-400">
+                            <i data-lucide="book-open-check" class="w-4 h-4"></i> วิธีคิดและเฉลยละเอียด (ครบทุกข้อ)
+                        </span>
+                        <i data-lucide="chevron-down" id="icon-sol-24" class="w-5 h-5 transition-transform"></i>
+                    </button>
+
+                    <div id="sol-24" class="mt-5 space-y-5">
+                        
+                        <!-- เฉลยส่วนที่ 1: โจทย์หลัก FC vs CNN -->
+                        <div class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
+                            <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 dark:border-slate-800">
+                                <i data-lucide="layers" class="w-5 h-5 text-sky-500"></i> เฉลยโจทย์หลัก: ปัญหาของ FC และการแก้ปัญหาด้วย CNN
+                            </h4>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700 dark:text-slate-300">
+                                <div class="p-4 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900">
+                                    <strong class="text-rose-600 dark:text-rose-400 flex items-center gap-1.5 mb-1.5">
+                                        <i data-lucide="x-circle" class="w-4 h-4"></i> ปัญหาของ FC:
+                                    </strong>
+                                    <p class="leading-relaxed">
+                                        ข้อมูลภาพมีพิกเซลจำนวนมาก การใช้ FC ต้องแปลงภาพ 2 มิติให้เรียงเป็นข้อมูล 1 มิติ (Flatten) ซึ่งทำให้ <strong>"สูญเสียความสัมพันธ์เชิงพื้นที่ (Spatial Structure)"</strong> ตำแหน่งของพิกเซลที่อยู่ใกล้เคียงกันจะหายไป นอกจากนี้ยังต้องใช้ค่าน้ำหนัก (Weight) มหาศาลในชั้นเดียว ทำให้เกิด <strong>Overfitting</strong> ได้ง่าย
+                                    </p>
+                                </div>
+
+                                <div class="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
+                                    <strong class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mb-1.5">
+                                        <i data-lucide="check-circle-2" class="w-4 h-4"></i> การแก้ปัญหาของ CNN:
+                                    </strong>
+                                    <p class="leading-relaxed">
+                                        CNN ใช้ Filter (Kernel) เลื่อนสแกนผ่านภาพทีละส่วน โดยใช้ค่าน้ำหนักชุดเดิมเสมอ <strong>(Weight Sharing)</strong> ช่วยลดจำนวนพารามิเตอร์ลงอย่างมาก และรักษาความสัมพันธ์เชิงพื้นที่ไว้ได้ ทำให้สามารถสกัดคุณลักษณะ <strong>(Feature Extraction)</strong> เช่น เส้น ขอบ หรือรูปร่างของวัตถุได้โดยอัตโนมัติ ไม่ว่าวัตถุจะถูกเลื่อนไปอยู่ตำแหน่งใดในภาพ <strong>(Translation Invariant)</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- เฉลยส่วนที่ 2: ข้อ 8 ลักษณะและการประยุกต์ใช้ FNN, CNN, RNN -->
+                        <div class="p-5 rounded-xl border border-sky-200 dark:border-sky-900 bg-sky-50/20 dark:bg-sky-950/20 space-y-3">
+                            <h4 class="font-bold text-sky-900 dark:text-sky-300 flex items-center gap-2">
+                                <i data-lucide="network" class="w-5 h-5 text-sky-600"></i> เฉลยข้อ 8: ลักษณะและการประยุกต์ใช้งานของ FNN, CNN และ RNN
+                            </h4>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs sm:text-sm">
+                                <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                                    <div class="font-bold text-indigo-600 dark:text-indigo-400 border-b pb-1 dark:border-slate-800">
+                                        1. FNN (Feedforward Neural Networks)
+                                    </div>
+                                    <p><strong>ลักษณะ:</strong> สัญญาณไหลไปข้างหน้าทิศทางเดียว (Input &rarr; Hidden &rarr; Output) ไม่มี Loop เชื่อมต่อกันแบบ Fully Connected</p>
+                                    <p><strong>การประยุกต์:</strong> ข้อมูลตาราง (Tabular Data), การจัดกลุ่มข้อมูล (Classification), การพยากรณ์ตัวเลข (Regression เช่น ราคาบ้าน, การอนุมัติสินเชื่อ)</p>
+                                </div>
+
+                                <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                                    <div class="font-bold text-sky-600 dark:text-sky-400 border-b pb-1 dark:border-slate-800">
+                                        2. CNN (Convolutional Neural Networks)
+                                    </div>
+                                    <p><strong>ลักษณะ:</strong> สกัดคุณลักษณะด้วย Kernel/Filter สแกนภาพ ใช้ Weight Sharing รักษาโครงสร้างเชิงพื้นที่ (Spatial)</p>
+                                    <p><strong>การประยุกต์:</strong> ประมวลผลภาพ (Image Classification), ตรวจจับและระบุตำแหน่งวัตถุ (Object Detection), การแบ่งส่วนภาพ (Image Segmentation)</p>
+                                </div>
+
+                                <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                                    <div class="font-bold text-purple-600 dark:text-purple-400 border-b pb-1 dark:border-slate-800">
+                                        3. RNN (Recurrent Neural Networks)
+                                    </div>
+                                    <p><strong>ลักษณะ:</strong> มี Feedback Loop และ Internal Memory นำเอา Output จากสเต็ปก่อนหน้า ($t-1$) มาร่วมประมวลผลกับอินพุตปัจจุบัน ($t$)</p>
+                                    <p><strong>การประยุกต์:</strong> ข้อมูลอนุกรมเวลา (Time-Series เช่น หุ้น, สภาพอากาศ), งานภาษา (NLP, แปลภาษา, วิเคราะห์อารมณ์ข้อความ), ระบบรู้จำเสียง (Speech-to-Text)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- เฉลยส่วนที่ 3: ข้อ 9 เหตุผลที่ CNN นิยมในงานภาพ -->
+                        <div class="p-5 rounded-xl border border-purple-200 dark:border-purple-900 bg-purple-50/20 dark:bg-purple-950/20 space-y-3">
+                            <h4 class="font-bold text-purple-900 dark:text-purple-300 flex items-center gap-2">
+                                <i data-lucide="image" class="w-5 h-5 text-purple-600"></i> เฉลยข้อ 9: เพราะเหตุใด CNN จึงได้รับความนิยมในงานประมวลผลภาพ
+                            </h4>
+                            <div class="space-y-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                                <p><strong>1. รักษาความสัมพันธ์เชิงพื้นที่ (Spatial Structure):</strong> จัดการพิกเซล 2 มิติและ 3 มิติโดยตรง ไม่ทำลายตำแหน่งข้างเคียงเหมือนการ Flatten ของโครงข่ายทั่วไป</p>
+                                <p><strong>2. สกัดคุณลักษณะอัตโนมัติ (Automatic Feature Extraction):</strong> ชั้น Convolution สกัดตั้งแต่ขอบ/เส้น (Low-level) ไปจนถึงรูปทรงและชิ้นส่วนของวัตถุ (High-level) ได้เอง</p>
+                                <p><strong>3. ลดทอนพารามิเตอร์ด้วย Weight Sharing:</strong> ใช้ Kernel ตัวเดิมเลื่อนสแกนทั่วทั้งภาพ ประหยัดหน่วยความจำ ลดการคำนวณมหาศาล และป้องกัน Overfitting</p>
+                                <p><strong>4. ทนทานต่อการเปลี่ยนตำแหน่ง (Translation Invariant):</strong> การทำงานร่วมกับ Pooling Layer ทำให้จดจำวัตถุได้แม่นยำ แม้วัตถุจะเอียง ขยับมุม หรือย่อ-ขยาย</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </article>
+
+                <!-- ข้อ 2.5 Generative AI (เพิ่ม ข้อ 1 และ ข้อ 13 เรียบร้อย) -->
+                <article id="card-q25" class="exam-card bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">Natural Language Processing & Generative AI</span>
+                            <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
+                                ข้อ 2.5 Generative AI (รวมข้อสอบข้อ 1 และข้อ 13)
+                            </h2>
+                        </div>
+                        <span class="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                            โจทย์หลัก + ข้อ 1 + ข้อ 13
+                        </span>
+                    </div>
+
+                    <div class="space-y-4 mb-6">
+                        <!-- โจทย์หลัก 2.5 -->
+                        <div class="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-700/60">
+                            <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-2">
+                                <i data-lucide="help-circle" class="w-5 h-5 text-sky-500"></i> โจทย์หลัก 2.5:
+                            </h3>
+                            <p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                                แบบจำลองภาษาขนาดใหญ่ (LLM) มีหลักการพื้นฐานในการสร้างข้อความให้ต่อเนื่องกันได้อย่างไร? ปรากฏการณ์ที่โมเดลตอบผิดแต่มั่นใจมากเรียกว่าอะไร? และเราควรปรับแก้ Prompt อย่างไรให้ได้ผลลัพธ์ที่ดีขึ้น (ยกตัวอย่างองค์ประกอบของ Prompt ที่ดี)?
+                            </p>
+                        </div>
+
+                        <!-- เพิ่ม: โจทย์ข้อ 1 และข้อ 13 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-4 rounded-xl bg-teal-50/60 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-900">
+                                <span class="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase">ข้อ 1 เพิ่มเติม</span>
+                                <p class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-1">
+                                    จงอธิบายความหมายของปัญญาประดิษฐ์สมัยใหม่ (Modern AI) และยกตัวอย่างการประยุกต์ใช้งานในชีวิตประจำวันอย่างน้อย 3 ตัวอย่าง
+                                </p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
+                                <span class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase">ข้อ 13 เพิ่มเติม</span>
+                                <p class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-1">
+                                    จงยกตัวอย่างประเภทของ ปัญญาประดิษฐ์เชิงสร้างสรรค์ อย่างน้อย 4 ประเภท พร้อมยกตัวอย่างเครื่องมือที่เกี่ยวข้อง
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleSection('sol-25')" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm font-semibold flex items-center justify-between transition-colors">
+                        <span class="flex items-center gap-2 text-sky-600 dark:text-sky-400">
+                            <i data-lucide="book-open-check" class="w-4 h-4"></i> วิธีคิดและเฉลยละเอียด (ครบทุกข้อ)
+                        </span>
+                        <i data-lucide="chevron-down" id="icon-sol-25" class="w-5 h-5 transition-transform"></i>
+                    </button>
+
+                    <div id="sol-25" class="mt-5 space-y-5">
+                        
+                        <!-- เฉลยส่วนที่ 1: โจทย์หลัก LLM / Hallucination / Prompt Engineering -->
+                        <div class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+                            <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b pb-2 dark:border-slate-800">
+                                <i data-lucide="bot" class="w-5 h-5 text-sky-500"></i> เฉลยโจทย์หลัก: หลักการทำงานของ LLM และ Prompt Engineering
+                            </h4>
+
+                            <div class="space-y-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                                <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
+                                    <strong class="text-sky-600 dark:text-sky-400 block mb-1">1. หลักการสร้างข้อความ:</strong>
+                                    LLM ทำงานโดยอาศัยสถาปัตยกรรม <strong>Transformer</strong> เพื่อประมวลผลบริบท (Context) และจะสร้างข้อความด้วยการประเมินความน่าจะเป็นเพื่อ <strong>"ทำนายโทเค็นถัดไป (Next Token Prediction)"</strong> ทีละ 1 โทเค็น (Token) ประกอบกันเป็นประโยคที่ต่อเนื่อง
+                                </div>
+
+                                <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
+                                    <strong class="text-rose-600 dark:text-rose-400 block mb-1">2. ปรากฏการณ์ที่เกิดขึ้น:</strong>
+                                    เรียกว่า <strong>อาการคิดไปเอง</strong> หรือ <strong>การสร้างข้อมูลคลาดเคลื่อน (Hallucination)</strong> เกิดจากโมเดลพยายามทำนายคำให้ถูกหลักภาษาตามบริบทที่ได้รับ แต่ขาดกระบวนการตรวจสอบข้อเท็จจริงภายนอก
+                                </div>
+
+                                <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
+                                    <strong class="text-amber-600 dark:text-amber-400 block mb-1">3. การปรับแก้ Prompt (Prompt Engineering):</strong>
+                                    ควรเขียน Prompt ให้ชัดเจนและมีองค์ประกอบครบ 4 ส่วน:
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 font-medium text-xs text-center">
+                                        <div class="p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 text-sky-600">1. กำหนดบทบาท (Role)</div>
+                                        <div class="p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 text-emerald-600">2. ระบุงานที่ต้องการ (Task)</div>
+                                        <div class="p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 text-amber-600">3. กำหนดรูปแบบคำตอบ (Format)</div>
+                                        <div class="p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 text-rose-600">4. ระบุข้อจำกัด (Constraint)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- เฉลยส่วนที่ 2: ข้อ 1 ความหมาย Modern AI & การประยุกต์ 3 ด้าน -->
+                        <div class="p-5 rounded-xl border border-teal-200 dark:border-teal-900 bg-teal-50/20 dark:bg-teal-950/20 space-y-3">
+                            <h4 class="font-bold text-teal-900 dark:text-teal-300 flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-5 h-5 text-teal-600"></i> เฉลยข้อ 1: ความหมายของ Modern AI และการประยุกต์ในชีวิตประจำวัน
+                            </h4>
+
+                            <div class="space-y-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                                <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                    <strong class="text-teal-700 dark:text-teal-300 block mb-1">ความหมายของ Modern AI:</strong>
+                                    ระบบอัจฉริยะที่พัฒนาข้ามพ้นระบบเงื่อนไขตามกฎเดิม (Rule-based) มาสู่การใช้ <strong>Machine Learning และ Deep Learning</strong> ที่สามารถเรียนรู้ สกัดแพทเทิร์น และปรับปรุงตนเองได้อัตโนมัติจากข้อมูลขนาดใหญ่ (Big Data) มีความสามารถในการประมวลผลข้อมูลไร้โครงสร้าง เช่น ภาพ เสียง วิดีโอ ภาษาธรรมชาติ ตลอดจนการสร้างสรรค์เนื้อหาใหม่ (Generative AI)
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                        <strong class="text-slate-900 dark:text-white block font-medium mb-1">1. ระบบแนะนำเนื้อหา</strong>
+                                        YouTube, Netflix, TikTok หรือแอปช้อปปิ้ง แนะนำคอนเทนต์ตรงตามความสนใจรายบุคคล
+                                    </div>
+                                    <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                        <strong class="text-slate-900 dark:text-white block font-medium mb-1">2. การนำทางและการเดินทาง</strong>
+                                        Google Maps คำนวณความหนาแน่นจราจรเรียลไทม์ และระบบขับขี่อัจฉริยะในยานยนต์
+                                    </div>
+                                    <div class="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                                        <strong class="text-slate-900 dark:text-white block font-medium mb-1">3. ผู้ช่วยเสมือนจริง</strong>
+                                        ChatGPT, Siri, Gemini ค้นหาข้อมูล ตอบคำถาม สรุปงาน และสั่งการด้วยเสียง
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- เฉลยส่วนที่ 3: ข้อ 13 ประเภทของ Generative AI 4 ประเภท + เครื่องมือ -->
+                        <div class="p-5 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50/20 dark:bg-amber-950/20 space-y-3">
+                            <h4 class="font-bold text-amber-900 dark:text-amber-300 flex items-center gap-2">
+                                <i data-lucide="palette" class="w-5 h-5 text-amber-600"></i> เฉลยข้อ 13: 4 ประเภทของปัญญาประดิษฐ์เชิงสร้างสรรค์ และเครื่องมือที่เกี่ยวข้อง
+                            </h4>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse border border-slate-200 dark:border-slate-800 text-xs sm:text-sm bg-white dark:bg-slate-900">
+                                    <thead>
+                                        <tr class="bg-amber-100/60 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200">
+                                            <th class="border border-slate-200 dark:border-slate-800 p-2.5">ประเภทของ Generative AI</th>
+                                            <th class="border border-slate-200 dark:border-slate-800 p-2.5">ลักษณะการทำงาน</th>
+                                            <th class="border border-slate-200 dark:border-slate-800 p-2.5">ตัวอย่างเครื่องมือ/โมเดล</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                                        <tr>
+                                            <td class="p-2.5 font-bold text-sky-600">1. Text Generation</td>
+                                            <td class="p-2.5">รับข้อความคำสั่ง แล้วสร้างบทความ สรุปเนื้อหา หรือเขียนโค้ด</td>
+                                            <td class="p-2.5 font-mono">ChatGPT (GPT-4), Claude, Gemini</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-2.5 font-bold text-emerald-600">2. Image Generation</td>
+                                            <td class="p-2.5">แปลงข้อความบรรยาย (Text-to-Image) เป็นภาพกราฟิกหรือภาพเสมือนจริง</td>
+                                            <td class="p-2.5 font-mono">Midjourney, DALL-E 3, Stable Diffusion</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-2.5 font-bold text-purple-600">3. Video Generation</td>
+                                            <td class="p-2.5">สร้างคลิปวิดีโอเคลื่อนไหวจากข้อความหรือภาพนิ่ง</td>
+                                            <td class="p-2.5 font-mono">Sora (OpenAI), Runway Gen-2/Gen-3, Pika</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-2.5 font-bold text-rose-600">4. Audio & Music Generation</td>
+                                            <td class="p-2.5">สร้างเพลง แต่งดนตรี หรือโคลนเสียงพากย์เสมือนมนุษย์</td>
+                                            <td class="p-2.5 font-mono">Suno AI, Udio, ElevenLabs</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </article>
+
+                <!-- ข้อ 2.6 AI Ethics -->
+                <article id="card-q26" class="exam-card bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">UNESCO Recommendations</span>
+                            <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5">
+                                ข้อ 2.6 AI Ethics การประเมินผลกระทบทางจริยธรรม (2 คะแนน)
+                            </h2>
+                        </div>
+                        <span class="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                            2 คะแนน
+                        </span>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-700/60 mb-6 space-y-3">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                            <i data-lucide="help-circle" class="w-5 h-5 text-sky-500"></i> โจทย์:
+                        </h3>
+                        <p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                            โรงพยาบาลแห่งหนึ่งพัฒนาระบบ AI เพื่อช่วยคัดกรองผู้ป่วยนอก โดยระบบจะจัดลำดับความเร่งด่วนและจ่ายคิวเข้าพบแพทย์ <strong>"แบบอัตโนมัติทั้งหมด (ไม่มีมนุษย์ตรวจสอบ)"</strong> ข้อมูลที่นำมาฝึกโมเดลมาจาก <strong>รพ.เอกชนใจกลางเมืองเพียงแห่งเดียว</strong>
+                        </p>
+                        <div class="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-1.5 text-sm text-slate-700 dark:text-slate-300">
+                            <p><strong>1.</strong> ระบบดังกล่าวเสี่ยงขัดต่อ "หลักการจริยธรรมปัญญาประดิษฐ์ (UNESCO)" ในมิติใดบ้าง? จงยกตัวอย่างพร้อมเหตุผลมา 2 มิติ</p>
+                            <p><strong>2.</strong> ท่านมีข้อเสนอแนะหรือมาตรการแก้ไขปัญหา (Mitigation) อย่างไร?</p>
+                        </div>
+                    </div>
+
+                    <button onclick="toggleSection('sol-26')" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm font-semibold flex items-center justify-between transition-colors">
+                        <span class="flex items-center gap-2 text-sky-600 dark:text-sky-400">
+                            <i data-lucide="book-open-check" class="w-4 h-4"></i> วิธีคิดและเฉลยละเอียด
+                        </span>
+                        <i data-lucide="chevron-down" id="icon-sol-26" class="w-5 h-5 transition-transform"></i>
+                    </button>
+
+                    <div id="sol-26" class="mt-5 space-y-4">
+                        <div class="p-5 rounded-xl border-2 border-emerald-500/30 dark:border-emerald-500/20 bg-emerald-50/20 dark:bg-emerald-950/20 space-y-5">
+                            <h4 class="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> วิธีคิดและเฉลย:
+                            </h4>
+
+                            <div class="space-y-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                                <div>
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200 mb-2">1. การละเมิดหลักการจริยธรรมปัญญาประดิษฐ์</p>
+                                    <div class="space-y-3">
+                                        <div class="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                                            <span class="font-bold text-rose-600 dark:text-rose-400 block mb-1">
+                                                • มิติที่ 3 ความเป็นธรรม การไม่เลือกปฏิบัติ และความหลากหลาย:
+                                            </span>
+                                            ข้อมูลฝึกสอนมาจาก รพ.เอกชนกลางเมืองเพียงแห่งเดียว ทำให้ขาดความสมดุลและความหลากหลาย (เกิด Data Bias) ระบบอาจจัดลำดับคิวให้กับกลุ่มเปราะบาง เช่น ผู้สูงอายุ แรงงานข้ามชาติ หรือผู้มีรายได้น้อย ผิดพลาด และไม่เป็นธรรมเมื่อเทียบกับความเป็นจริง
+                                        </div>
+                                        <div class="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                                            <span class="font-bold text-rose-600 dark:text-rose-400 block mb-1">
+                                                • มิติที่ 6 การกำกับดูแลและการตัดสินใจโดยมนุษย์:
+                                            </span>
+                                            การปล่อยให้ระบบ AI จัดคิวอัตโนมัติทั้งหมดโดยปราศจากการตรวจสอบ ขัดต่อหลักการให้มนุษย์อยู่ในกระบวนการ (Human-in-the-loop) หาก AI ตัดสินใจพลาดอาจส่งผลกระทบโดยตรงต่อโอกาสรอดชีวิตของผู้ป่วย
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200 mb-2">2. มาตรการแก้ไขปัญหา (Mitigation)</p>
+                                    <div class="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                                        <p>• ยกเลิกการตัดสินใจคิวแบบอัตโนมัติทั้งหมด โดยเปลี่ยนให้มี <strong>พยาบาลคัดกรองทำหน้าที่ตรวจสอบและตัดสินใจขั้นสุดท้าย (Human Oversight)</strong> เพื่อลดความผิดพลาด</p>
+                                        <p>• <strong>เพิ่มชุดข้อมูลฝึกสอนจากแหล่งอื่น</strong> เช่น โรงพยาบาลของรัฐในหลายพื้นที่ เพื่อเพิ่มความหลากหลายของประชากร และ <strong>ทดสอบความแม่นยำของโมเดลแยกตามกลุ่มประชากร</strong> (เช่น ผู้สูงอายุ) เพื่ออุดช่องโหว่ความลำเอียง</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+            </main>
+
+            <footer class="mt-12 py-6 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500">
+                คู่มือติวและเฉลยแนวข้อสอบ AI & Machine Learning • พร้อมสำหรับการทบทวนก่อนสอบ
+            </footer>
+        </div>
+
+    </div>
+
+    <!-- =========================================================================
+         SCRIPT ZONE: โค้ดควบคุมระบบหลักและการสลับหน้า
+         ========================================================================= -->
+    <script>
+        // ฟังก์ชันสลับหน้าหลัก (ข้อกา vs ข้อเขียน)
+        function switchMainPortal(mode) {
+            const viewChoice = document.getElementById('view-choice');
+            const viewWritten = document.getElementById('view-written');
+            const btnChoice = document.getElementById('btn-mode-choice');
+            const btnWritten = document.getElementById('btn-mode-written');
+
+            if (mode === 'choice') {
+                viewChoice.classList.remove('hidden');
+                viewWritten.classList.add('hidden');
+                
+                btnChoice.className = 'flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-indigo-600 text-white shadow-sm';
+                btnWritten.className = 'flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white';
+            } else {
+                viewChoice.classList.add('hidden');
+                viewWritten.classList.remove('hidden');
+                
+                btnWritten.className = 'flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-sky-600 text-white shadow-sm';
+                btnChoice.className = 'flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-400 hover:text-white';
+
+                // เรนเดอร์สูตร KaTeX เมื่อเปิดหน้าข้อเขียน
+                if (window.renderMathInElement) {
+                    renderMathInElement(document.getElementById('view-written'), {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false}
+                        ]
+                    });
+                }
+            }
+        }
+
+        // ==========================================
+        // SCRIPT ส่วนที่ 1: ระบบข้อกา (จาก Exam.html)
+        // ==========================================
+        const quizData = {
+            chapter6: {
+                title: "CH6: Intro to ML",
+                questions: [
+                    { question: "กำหนดให้ Positive class = 'เป็นโรค' และ Negative class = 'ไม่เป็นโรค' ทำนาย 'ไม่เป็นโรค' ทั้งหมด ข้อใดอธิบายสถานการณ์นี้ได้ถูกต้องที่สุด?", options: ["TN สูง และ Accuracy สูง", "TN สูง แต่ Sensitivity ต่ำ", "TP สูง และ Sensitivity สูง", "TP สูง แต่ Accuracy ต่ำ"], correctAnswer: 1 },
+                    { question: "ระบบอีเมลตรวจพบว่าอีเมลฉบับหนึ่งเป็น Spam และจริงๆ แล้วอีเมลฉบับนั้นก็เป็น Spam ค่าที่ได้เรียกว่าอะไร", options: ["False Positive (FP)", "True Negative (TN)", "True Positive (TP)", "False Negative (FN)"], correctAnswer: 2 },
+                    { question: "Supervised learning จำเป็นต้องมีองค์ประกอบใด", options: ["output data", "labeled data", "ถูกทุกข้อ", "input data"], correctAnswer: 2 },
+                    { question: "ข้อใด ไม่ใช่ วิธีการเรียนรู้ของ Machine learning ในปัจจุบัน", options: ["Unsupervised learning", "Semisupervised learning", "Resupervised learning", "Supervised learning"], correctAnswer: 2 },
+                    { question: "ข้อใดให้ความหมายของ Overfit ได้ดีที่สุด", options: ["ข้อมูลมีปริมาณเยอะเกินไป", "เกิดขึ้นกับโมเดลที่เรียนรู้จากข้อมูลเพียง 1 iteration", "โมเดลที่ได้เรียนรู้ได้ดี", "โมเดลที่ได้นำไปใช้จริงไม่ได้"], correctAnswer: 3 },
+                    { question: "ข้อใดกล่าวถูกต้องเกี่ยวกับ Machine learning ได้ถูกต้อง", options: ["ต้องมีการเรียนรู้จากข้อมูลเพื่อนำไปใช้ตัดสินใจกับข้อมูลที่ไม่เคยเห็น", "ทุกสิ่งที่เป็นเครื่องมือ เช่น สว่านไฟฟ้า", "บางส่วนของ Machine learning ไม่เกี่ยวข้องกับ AI", "Adversarial Search จัดอยู่ในกลุ่มของ Machine Learning"], correctAnswer: 0 },
+                    { question: "การ Validation ควรทำในการเรียนรู้แบบใด", options: ["ควรทำทั้งคู่", "Supervised learning", "ไม่ควรทำทั้งคู่", "Unsupervised learning"], correctAnswer: 0 },
+                    { question: "ข้อใดไม่ใช่ การประยุกต์ใช้ Machine learning ในการแก้ปัญหา", options: ["พยากรณ์ราคาหุ้น", "แก้ปัญหา Sudoku", "ทำนายราคาบ้าน", "คาดการณ์น้ำท่วม"], correctAnswer: 1 },
+                    { question: "Unsupervised learning ไม่ จำเป็นต้องมีองค์ประกอบใด", options: ["output data", "ถูกทุกข้อ", "labeled data", "input data"], correctAnswer: 2 }
+                ]
+            },
+            chapter7: {
+                title: "CH7: Decision Tree",
+                questions: [
+                    { question: "คำสั่ง fit หมายถึงอะไร ในกรณี DecisionTreeClassifier", options: ["สร้างโมเดล DecisionTreeClassifier", "พยากรณ์ผลลัพธ์ของโมเดลจากข้อมูล Validation", "แบ่งข้อมูล Training และ Validation", "Train โมเดลจากข้อมูล Training"], correctAnswer: 3 },
+                    { question: "ข้อจำกัดด้านความไม่เสถียรของโมเดล Decision Tree คือ", options: ["ถูกทุกข้อ", "ไม่เสถียร โมเดลมีการอัพเดตตลอด หาก node ที่ใช้ในการ train ทำให้เกิด error", "กรณีมี noise เยอะ โมเดล Decision Tree จะเกิด overfit", "กรณีข้อมูล train ในแต่ละคลาสมีจำนวนไม่เท่ากัน โมเดล Decision Tree จะให้ความสำคัญกับคลาสที่มีจำนวนข้อมูลเยอะกว่า"], correctAnswer: 0 },
+                    { question: "คำสั่งใด ใช้ในการแสดงภาพโครงสร้างของโมเดล Decision Tree กำหนดให้ model = DecisionTreeClassifier", options: ["plot_tree(mode)", "plot(mode)", "model.plot()", "model.plot_tree()"], correctAnswer: 0 },
+                    { question: "Decision Tree มี Time Complexity ในการตัดสินใจ กรณี Average Case เท่ากับเท่าไหร่", options: ["O(n log n)", "O(log n)", "O(n^2) ยกกำลังสอง", "O(n)"], correctAnswer: 1 },
+                    { question: "Decision Tree มีลักษณะโครงสร้างข้อมูลเป็นลักษณะใด", options: ["Tuple", "Tree", "Graph", "Set"], correctAnswer: 1 },
+                    { question: "Decision Tree มี Time Complexity ในการตัดสินใจ กรณี Worst Case เท่ากับเท่าไหร่", options: ["O(n log n)", "O(log n)", "O(n^2) ยกกำลังสอง", "O(n)"], correctAnswer: 3 },
+                    { question: "Criterion Function หมายถึงสิ่งใดใน Decision Tree", options: ["Activation Function", "Gradient Descent", "Optimization Function", "Transfer Function"], correctAnswer: 2 },
+                    { question: "การใช้งานคำสั่ง DecisionTreeClassifier เพื่อสร้างโมเดล Decision Tree การกำหนด maxdepth มีผลอย่างไรต่อการโมเดล", options: ["กำหนดจำนวน Class ตามจำนวนของ maxdepth", "เกิด overfit ง่ายขึ้น", "ความถูกต้องของการ validation แปรผกผันกับจำนวน maxdepth", "ความถูกต้องของการ validation แปรผันตรงกับจำนวน maxdepth"], correctAnswer: 1 },
+                    { question: "จุดเด่นของ Decision Tree คือ", options: ["ทุกข้อเป็นจุดเด่นของ Decision Tree", "เกิด Overfit ได้ยาก", "มีความสามารถ Generalization ที่สูง", "การจำแนกข้อมูลแบบ Nonlinear ได้ดี"], correctAnswer: 3 }
+                ]
+            },
+            chapter8: {
+                title: "CH8: ANN",
+                questions: [
+                    { question: "คำสั่ง np.random.shuffle(x) มีจุดประสงค์เพื่อจัดการข้อมูล x อย่างไร", options: ["สุ่มข้อมูลเท่ากับจำนวนของ x โดยเลือกจากค่าที่อยู่ใน x แต่ละค่า", "เลือกเล่นเพลงแบบสุ่มจาก playlist", "สุ่มข้อมูลจำนวนเต็มจาก 1 ถึง จำนวนของ x เท่ากับ x จำนวน", "สลับลำดับข้อมูลของ x แบบสุ่ม"], correctAnswer: 3 },
+                    { question: "Function ใด มีลักษณะของฟังก์ชันคล้ายกับ Softmax function มากที่สุด", options: ["Sigmoid function", "ReLU function", "LeakyReLU function", "Linear function"], correctAnswer: 0 },
+                    { question: "Artificial Neural Network มีหลักการทำงานเลียนแบบสิ่งใด", options: ["ธรรมชาติ", "คณิตศาสตร์", "จิตใจมนุษย์", "สมองมนุษย์"], correctAnswer: 3 },
+                    { question: "Activation Function ทำหน้าที่ใด ใน Artificial Neural Network", options: ["ตัดสินใจว่า input นั้น ๆ ควรจะอยู่ใน class ใด", "เพิ่มหรือลดค่าความคลาดเคลื่อนของผลลัพธ์สุดท้าย ในปริมาณที่ยอมรับได้", "เป็นตัวแปรที่ใช้ในการคูณกับ input แต่ละตัว", "คำนวณผลรวมระหว่าง input และ weight"], correctAnswer: 0 },
+                    { question: "กำหนดให้ x เป็นข้อมูลจาก dataframe หากเรียกใช้คำสั่ง x.unique() ผลลัพธ์ที่ได้คือข้อใด", options: ["แสดงข้อมูล x เฉพาะ dimension แรก", "แสดงข้อมูล x ทั้งหมด", "แสดงข้อมูล x เฉพาะ dimension สุดท้าย", "แสดงข้อมูล x เฉพาะข้อมูลที่แตกต่าง"], correctAnswer: 3 },
+                    { question: "Transfer Function ทำหน้าที่ใด ใน Artificial Neural Network", options: ["เป็นตัวแปรที่ใช้ในการคูณกับ input แต่ละตัว", "คำนวณผลรวมระหว่าง input และ weight", "เพิ่มหรือลดค่าความคลาดเคลื่อนของผลลัพธ์สุดท้าย ในปริมาณที่ยอมรับได้", "ตัดสินใจว่า input นั้น ๆ ควรจะอยู่ใน class ใด"], correctAnswer: 1 },
+                    { question: "Function ใด มีลักษณะการจำแนกข้อมูล (Classification) แตกต่างจากข้ออื่น", options: ["Sigmoid function", "Softmax function", "Linear function", "ReLU function"], correctAnswer: 2 },
+                    { question: "ในการใช้ matplotlib ใช้คำสั่ง plot ภายในฟังก์ชัน มีการส่งตัวแปร marker หากกำหนดให้ค่า marker=\"s\" จะทำให้การแสดงผลกราฟมีลักษณะเป็นอย่างไร", options: ["แทนที่ข้อมูลด้วยจุด", "แทนที่ข้อมูลด้วยสี่เหลี่ยม", "แทนที่ข้อมูลด้วยวงกลม", "แทนที่ข้อมูลด้วยดาว"], correctAnswer: 1 },
+                    { question: "Bias ทำหน้าที่ใด ใน Artificial Neural Network", options: ["เป็นตัวแปรที่ใช้ในการคูณกับ input แต่ละตัว", "คำนวณผลรวมระหว่าง input และ weight", "ตัดสินใจว่า input นั้น ๆ ควรจะอยู่ใน class ใด", "เพิ่มหรือลดค่าความคลาดเคลื่อนของผลลัพธ์สุดท้าย ในปริมาณที่ยอมรับได้"], correctAnswer: 3 }
+                ]
+            },
+            chapter9_1: {
+                title: "CH9 Part 1: CNN",
+                questions: [
+                    { question: "ข้อใดอธิบาย Convolution Layer ใน CNN ได้ถูกต้องที่สุด", options: ["เลื่อน filter ขนาดเล็กผ่านภาพเพื่อสกัด local feature", "ลด dimension ของข้อมูลโดยการเฉลี่ยค่า pixel", "แปลง feature map ให้เป็น probability ของแต่ละ class", "เชื่อม neuron ทุกตัวใน layer ก่อนหน้าเข้ากับ layer ถัดไป"], correctAnswer: 0 },
+                    { question: "Max Pooling Layer มีจุดประสงค์หลักคืออะไร", options: ["เพิ่มจำนวน parameter ใน network", "เพิ่มความละเอียดของ feature map", "แปลง pixel ให้เป็นค่า binary 0 หรือ 1", "ลดขนาด feature map และเก็บค่าที่โดดเด่นที่สุดในแต่ละ region"], correctAnswer: 3 },
+                    { question: "Transfer Learning ในบริบทของ CNN หมายถึงอะไร", options: ["การย้ายไฟล์ model ไปยัง server ใหม่", "การแปลง model ให้รองรับภาษาอื่น", "การ transfer gradient จาก layer ท้ายไปยัง layer ต้น", "การนำ model ที่ฝึกบน dataset ใหญ่ (เช่น ImageNet) มาปรับใช้กับงานใหม่"], correctAnswer: 3 },
+                    { question: "Fully Connected Layer ที่ท้าย CNN ทำหน้าที่ใด", options: ["ปรับค่า pixel ให้อยู่ในช่วง 0–1", "สกัด edge และ texture จากภาพต้นฉบับ", "แมป feature ที่สกัดได้ไปยัง output class (classification)", "ลดความซับซ้อนของ feature map ด้วย convolution"], correctAnswer: 2 },
+                    { question: "ค่าในการคูณ Feature Map นี้มีค่าเท่ากับเท่าไหร่", questionHTML: "<div class='flex flex-wrap items-center gap-4 mt-4 text-sm font-sans'><div class='grid grid-cols-5 gap-1'><div class='w-8 h-8 flex items-center justify-center border bg-blue-100 text-blue-800 font-bold'>1</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-100 text-blue-800 font-bold'>2</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-100 text-blue-800 font-bold'>3</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>0</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>1</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-100 text-blue-800 font-bold'>4</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-100 text-blue-800 font-bold'>0</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-100 text-blue-800 font-bold'>1</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>1</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>2</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-200 text-blue-900 font-bold'>7</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-200 text-blue-900 font-bold'>1</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-200 text-blue-900 font-bold'>9</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>2</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>3</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>2</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>3</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>4</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>3</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>4</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>1</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>2</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>3</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>4</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-400'>5</div></div><div class='text-2xl font-bold text-cyan-500'>×</div><div class='grid grid-cols-3 gap-1'><div class='w-8 h-8 flex items-center justify-center border bg-orange-100 text-orange-900 font-bold'>1</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-800 font-bold'>0</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-50 text-blue-900 font-bold'>-1</div><div class='w-8 h-8 flex items-center justify-center border bg-orange-100 text-orange-900 font-bold'>1</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-800 font-bold'>0</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-50 text-blue-900 font-bold'>-1</div><div class='w-8 h-8 flex items-center justify-center border bg-orange-100 text-orange-900 font-bold'>1</div><div class='w-8 h-8 flex items-center justify-center border bg-slate-50 text-slate-800 font-bold'>0</div><div class='w-8 h-8 flex items-center justify-center border bg-blue-50 text-blue-900 font-bold'>-1</div></div></div>", options: ["1", "-6", "-1", "0"], correctAnswer: 2 },
+                    { question: "Dropout Layer ช่วยแก้ปัญหาใดระหว่างการ train", options: ["เพิ่มขนาด feature map ให้ใหญ่ขึ้น", "สุ่มปิด neuron บางส่วนเพื่อป้องกัน overfitting", "ลดจำนวน epoch ที่ต้องการ train", "เร่งความเร็วใน inference โดยลด computation"], correctAnswer: 1 },
+                    { question: "ถ้าต้องการให้ CNN จำแนกภาพ 10 class (เช่น ตัวเลข 0–9) Output layer ควรมีโครงสร้างอย่างไร", options: ["10 neurons พร้อม Softmax activation", "100 neurons พร้อม Tanh activation", "1 neuron พร้อม Sigmoid activation", "10 neurons พร้อม ReLU activation"], correctAnswer: 0 },
+                    { question: "Overfitting ใน CNN มักเกิดจากสาเหตุใด", options: ["จำนวน epoch น้อยเกินไป", "Model มี parameter น้อยเกินไปสำหรับข้อมูล", "Learning rate ต่ำเกินไปจนไม่ converge", "Model ซับซ้อนเกินไปจนจำ noise ใน training data"], correctAnswer: 3 },
+                    { question: "Batch Normalization ส่งผลอย่างไรต่อการ train CNN", options: ["ลด parameter ใน model ลงกว่าครึ่ง", "ทำให้ training เสถียรขึ้นและสามารถใช้ learning rate สูงขึ้นได้", "แทนที่ activation function ทั้งหมด", "เพิ่ม accuracy ของ test set โดยตรงโดยไม่ต้องปรับ hyperparameter"], correctAnswer: 1 }
+                ]
+            },
+            chapter9_2: {
+                title: "CH9 Part 2: Generative AI",
+                questions: [
+                    { question: "Hallucination ใน LLM หมายถึงอะไร", options: ["Model ใช้ภาษาไม่เหมาะสมกับ context", "Model ปฏิเสธที่จะตอบคำถามที่ sensitive", "Model ตอบช้าผิดปกติเนื่องจาก overload", "Model สร้างข้อมูลที่ผิดหรือไม่มีอยู่จริงขึ้นมาอย่างมั่นใจ"], correctAnswer: 3 },
+                    { question: "Temperature parameter ที่ค่า 0.0 ใน LLM จะให้ผลลัพธ์แบบใด", options: ["Model ปฏิเสธที่จะตอบคำถาม", "ผลลัพธ์ที่แน่นอนและทำซ้ำได้ (deterministic)", "ผลลัพธ์สร้างสรรค์และหลากหลายมากที่สุด", "ผลลัพธ์เป็นภาษาไทยเสมอ"], correctAnswer: 1 },
+                    { question: "Few-shot Prompting แตกต่างจาก Zero-shot Prompting อย่างไร", options: ["Few-shot ให้ตัวอย่าง Input→Output ก่อนถามคำถามจริง ส่วน Zero-shot ไม่มีตัวอย่าง", "Few-shot ส่ง prompt หลายครั้ง ส่วน Zero-shot ส่งครั้งเดียว", "Few-shot ใช้ model ขนาดใหญ่กว่า Zero-shot เสมอ", "Few-shot ใช้ JSON format เสมอ ส่วน Zero-shot ใช้ plain text"], correctAnswer: 0 },
+                    { question: "Large Language Model (LLM) ทำงานโดยหลักการใด", options: ["ค้นหาคำตอบจาก database ที่จัดเก็บไว้ล่วงหน้า", "แปลงเสียงพูดเป็นข้อความโดยใช้ Fourier Transform", "ทำนาย token ถัดไปที่เหมาะสมที่สุดจาก context ก่อนหน้า", "จดจำ pattern ของภาพและแมปเป็นข้อความ"], correctAnswer: 2 },
+                    { question: "ข้อใดคือชื่อของ Algorithm ที่เป็นรากฐานของ LLMs", options: ["VAE Model", "GAN Model", "Transformer Model", "Diffusion Model"], correctAnswer: 2 },
+                    { question: "เหตุใดจึงควรเก็บ OpenRouter API Key ไว้ใน .env file แทนการ hard-code ใน .py", options: ["เพราะ Python ไม่สามารถอ่านค่า string ที่ยาวเกิน 50 ตัวอักษรได้", "เพราะ hard-code ทำให้ key ถูก commit ลง Git และอาจรั่วไหลได้", "เพราะ .env file ทำให้ไฟล์ .py มีขนาดเล็กลง", "เพราะ .env file ทำให้ Python รันเร็วขึ้น"], correctAnswer: 1 },
+                    { question: "ใน Chat Completion API ของ OpenRouter บทบาท 'system' role มีหน้าที่อะไร", options: ["ควบคุม rate limit และ quota ของ API key", "บันทึก log การสนทนาทั้งหมดลง database", "แสดงผลลัพธ์สุดท้ายของ AI ให้ user เห็น", "กำหนดบุคลิก กฎการตอบ และข้อจำกัดของ AI agent"], correctAnswer: 3 },
+                    { question: "AGENTS.md pattern มีข้อดีอะไรในการพัฒนา AI Agent", options: ["แยก configuration ของ AI (บุคลิก กฎ format) ออกจาก code ทำให้แก้ไขได้โดยไม่ต้องแตะ Python", "บีบอัด prompt ให้สั้นลงเพื่อลด token cost", "ทำให้ Python code ทำงานเร็วขึ้นโดยไม่ต้องเรียก API", "เข้ารหัส API key ให้ปลอดภัยอัตโนมัติ"], correctAnswer: 0 },
+                    { question: "Chain-of-Thought (CoT) Prompting ช่วยลดปัญหาใดของ LLM ได้ดีที่สุด", options: ["ลด Hallucination โดยให้ model แสดงขั้นตอนการคิดก่อนสรุป", "ลด latency ของ API response", "ลดขนาดของ model ที่ต้องโหลดเข้า memory", "ลด cost ต่อ request"], correctAnswer: 0 }
+                ]
+            },
+            chapter10: {
+                title: "CH10: AI Ethics",
+                questions: [
+                    {
+                        question: "เมื่อระบบปัญญาประดิษฐ์ตัดสินใจผิดพลาดจนเกิดความเสียหาย ข้อใดอธิบายการกำหนดความรับผิดชอบได้ถูกต้องที่สุด",
+                        options: [
+                            "ระบบปัญญาประดิษฐ์เป็นผู้รับผิดชอบ เพราะเป็นผู้ตัดสินใจโดยตรง",
+                            "ความรับผิดชอบต้องผูกพันกับมนุษย์เสมอ และต้องกำหนดขอบเขตของแต่ละฝ่ายให้ชัดเจนตั้งแต่เริ่มโครงการ",
+                            "ผู้ใช้งานต้องรับผิดชอบเสมอ เพราะเป็นผู้ตัดสินใจขั้นสุดท้าย",
+                            "ผู้พัฒนาแบบจำลองต้องรับผิดชอบแต่เพียงผู้เดียว เพราะเป็นผู้สร้างระบบขึ้นมา"
+                        ],
+                        correctAnswer: 1
+                    },
+                    {
+                        question: "ข้อใดกล่าว \"ไม่ถูกต้อง\" เกี่ยวกับการนำหลักการจริยธรรมปัญญาประดิษฐ์ไปปฏิบัติ",
+                        options: [
+                            "ความรับผิดชอบต่อผลการตัดสินใจของระบบต้องผูกพันกับมนุษย์เสมอ",
+                            "ความยั่งยืนครอบคลุมทั้งการใช้พลังงานของระบบและผลกระทบต่อโครงสร้างการจ้างงาน",
+                            "เมื่อแบบจำลองมีค่าความแม่นยำโดยรวมสูงแล้ว ถือว่าระบบมีความเป็นธรรมเพียงพอ",
+                            "ความโปร่งใสคือการเปิดเผยว่าระบบทำงานอย่างไร ส่วนความสามารถในการอธิบายคือการอธิบายเหตุผลของผลลัพธ์ในกรณีเฉพาะ"
+                        ],
+                        correctAnswer: 2
+                    },
+                    {
+                        question: "เมื่อองค์กรนำระบบปัญญาประดิษฐ์มาใช้ตัดสินใจในเรื่องที่กระทบต่อสิทธิของบุคคล กลุ่มใดต้องได้รับแจ้งว่ามีการใช้ปัญญาประดิษฐ์เป็นลำดับแรก",
+                        options: [
+                            "ทีมพัฒนาแบบจำลองภายในองค์กร",
+                            "ผู้ได้รับผลกระทบจากการตัดสินใจของระบบ",
+                            "หน่วยงานกำกับดูแลระดับประเทศ",
+                            "ผู้ถือหุ้นและนักลงทุนขององค์กร"
+                        ],
+                        correctAnswer: 1
+                    },
+                    {
+                        question: "ข้อใดเรียงลำดับขั้นตอนของกระบวนการประเมินผลกระทบทางจริยธรรมปัญญาประดิษฐ์ (EIA) ได้ถูกต้อง",
+                        options: [
+                            "การประเมินตามหลักการด้านจริยธรรม → การวิเคราะห์ผลกระทบ → การกำหนดขอบเขตการประเมิน",
+                            "การกำหนดขอบเขตการประเมิน → การวิเคราะห์ผลกระทบ → การประเมินตามหลักการด้านจริยธรรม",
+                            "การกำหนดขอบเขตการประเมิน → การประเมินตามหลักการด้านจริยธรรม → การวิเคราะห์ผลกระทบ",
+                            "การวิเคราะห์ผลกระทบ → การกำหนดขอบเขตการประเมิน → การประเมินตามหลักการด้านจริยธรรม"
+                        ],
+                        correctAnswer: 2
+                    },
+                    {
+                        question: "ข้อใดกล่าวถูกต้องเกี่ยวกับหลักการจริยธรรมปัญญาประดิษฐ์ 10 มิติ ตามแนวทางของ UNESCO",
+                        options: [
+                            "ทั้ง 10 มิติถูกนำไปใช้ในขั้นตอนเดียวกันของกระบวนการประเมิน",
+                            "มิติที่ 1 และมิติที่ 10 ใช้ในขั้นกำหนดขอบเขตการประเมิน ส่วนอีก 8 มิติใช้ในขั้นประเมินตามหลักการและวิเคราะห์ผลกระทบ",
+                            "หลักการนี้มีผลบังคับใช้ทางกฎหมายโดยตรงกับประเทศสมาชิกทั้ง 194 ประเทศ",
+                            "หลักการนี้ครอบคลุมเฉพาะประเด็นทางเทคนิคของแบบจำลอง ไม่รวมด้านสังคมและสิ่งแวดล้อม"
+                        ],
+                        correctAnswer: 1
+                    },
+                    {
+                        question: "เหตุใดจึงต้องคำนึงถึงจริยธรรมในการนำปัญญาประดิษฐ์มาใช้งาน",
+                        options: [
+                            "เพราะระบบปัญญาประดิษฐ์มีต้นทุนการพัฒนาสูง จึงต้องใช้ให้คุ้มค่าที่สุด",
+                            "เพราะกฎหมายกำหนดให้ระบบปัญญาประดิษฐ์ทุกระบบต้องผ่านการรับรองก่อนนำไปใช้งาน",
+                            "เพราะระบบปัญญาประดิษฐ์ยังมีความแม่นยำต่ำกว่ามนุษย์ในทุกประเภทงาน",
+                            "เพราะการตัดสินใจของระบบอาจกระทบต่อสิทธิ โอกาส และความเป็นอยู่ของบุคคล โดยเฉพาะกลุ่มเปราะบาง"
+                        ],
+                        correctAnswer: 3
+                    },
+                    {
+                        question: "ระบบปัญญาประดิษฐ์สำหรับคัดเลือกผู้สมัครงานถูกฝึกด้วยข้อมูลการรับสมัครย้อนหลัง 10 ปี ซึ่งผู้ได้รับคัดเลือกส่วนใหญ่เป็นเพศชาย ทำให้ระบบให้คะแนนผู้สมัครเพศหญิงต่ำกว่า ความลำเอียงในกรณีนี้ตรงกับข้อใดมากที่สุด",
+                        options: [
+                            "ลำเอียงจากการเก็บข้อมูล (Collection Bias)",
+                            "ลำเอียงจากข้อมูล (Data Bias)",
+                            "ลำเอียงจากข้อมูลสะท้อนกลับ (Feedback Bias)",
+                            "ลำเอียงจากขั้นตอนวิธี (Algorithm Bias)"
+                        ],
+                        correctAnswer: 1
+                    },
+                    {
+                        question: "หน่วยงานใดจัดทำคู่มือการประเมินผลกระทบทางจริยธรรมปัญญาประดิษฐ์ฉบับภาษาไทย เพื่อให้องค์กรไทยนำหลักการของ UNESCO ไปปฏิบัติได้จริง",
+                        options: [
+                            "องค์การระหว่างประเทศว่าด้วยการมาตรฐาน (ISO/IEC)",
+                            "สถาบันมาตรฐานและเทคโนโลยีแห่งชาติสหรัฐอเมริกา (NIST)",
+                            "สำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ (สพธอ.) ร่วมกับศูนย์ธรรมาภิบาลปัญญาประดิษฐ์ (AIGPC)",
+                            "องค์การการศึกษา วิทยาศาสตร์ และวัฒนธรรมแห่งสหประชาชาติ (UNESCO)"
+                        ],
+                        correctAnswer: 2
+                    },
+                    {
+                        question: "ข้อใดเป็นแนวปฏิบัติที่ช่วยให้การพัฒนาปัญญาประดิษฐ์มีความยั่งยืน",
+                        options: [
+                            "เพิ่มจำนวนรอบการฝึกให้มากที่สุดเท่าที่ทรัพยากรจะอำนวย",
+                            "จัดเก็บข้อมูลฝึกไว้ทั้งหมดโดยไม่ลบ เพื่อให้ฝึกซ้ำได้ตลอดเวลา",
+                            "เลือกใช้แบบจำลองขนาดใหญ่ที่สุดเสมอ เพื่อให้ได้ความแม่นยำสูงสุด",
+                            "ใช้การเรียนรู้แบบถ่ายโอน (Transfer Learning) และลดขนาดแบบจำลองด้วย Quantization หรือ Pruning",
+                            "ฝึกแบบจำลองใหม่ตั้งแต่ต้นทุกครั้ง เพื่อให้ได้ผลลัพธ์ที่เหมาะกับงานมากที่สุด"
+                        ],
+                        correctAnswer: 3
+                    }
+                ]
+            },
+            special_ch6: {
+                title: "Special CH: ML (บทที่ 6)",
+                questions: [
+                    {
+                        question: "1. เป้าหมายสำคัญในการฝึกโมเดล Machine Learning ในเชิงปัญหาการหาค่าเหมาะสม (Optimization) คืออะไร?",
+                        options: ["ก) การเพิ่มพารามิเตอร์ของโมเดลให้มีจำนวนมากที่สุด", "ข) การทำให้ค่า Loss Function มีค่าต่ำที่สุด", "ค) การทำให้ความถูกต้องบนชุดข้อมูลฝึกเป็น 100%", "ง) การทำให้โมเดลท่องจำข้อมูลตัวอย่างได้ทั้งหมด"],
+                        correctAnswer: 1,
+                        explanation: "การฝึกโมเดลคือกระบวนการปรับค่าพารามิเตอร์เพื่อให้ Loss Function มีค่าต่ำที่สุด"
+                    },
+                    {
+                        question: "2. งานประเภทใดจัดเป็นการเรียนรู้แบบมีผู้สอน (Supervised Learning)?",
+                        options: ["ก) การจัดกลุ่มลูกค้าตามพฤติกรรม (Clustering)", "ข) การลดมิติของข้อมูล (Dimensionality Reduction)", "ค) การจำแนกภาพสุนัขและแมว (Classification)", "ง) การหาความสัมพันธ์ของสินค้าที่ซื้อร่วมกัน (Association Rules)"],
+                        correctAnswer: 2,
+                        explanation: "การจำแนกประเภท (Classification) และการถดถอย (Regression) จัดเป็น Supervised Learning เนื่องจากใช้ข้อมูลที่มีป้ายกำกับ (Labeled Data)"
+                    },
+                    {
+                        question: "3. การเรียนรู้แบบใดที่ตัวแทน (Agent) ปรับปรุงกลยุทธ์ผ่านรางวัล (Reward) และการลงโทษ (Penalty)?",
+                        options: ["ก) Supervised Learning", "ข) Unsupervised Learning", "ค) Reinforcement Learning", "ง) Semi-supervised Learning"],
+                        correctAnswer: 2,
+                        explanation: "Reinforcement Learning คือการเรียนรู้ผ่านการลองผิดลองถูกและโต้ตอบกับสภาพแวดล้อมโดยอาศัยรางวัลและการลงโทษ"
+                    },
+                    {
+                        question: "4. เหตุใดจึงห้ามนำชุดข้อมูลทดสอบ (Testing Dataset) มาใช้ในขั้นตอนการปรับจูน Hyperparameters?",
+                        options: ["ก) เพราะทำให้การประมวลผลช้าลง", "ข) เพราะทำให้เกิดความลำเอียงและไม่สามารถวัดประสิทธิภาพกับข้อมูลใหม่ที่แท้จริงได้", "ค) เพราะชุดข้อมูลทดสอบไม่มีป้ายกำกับ (Label)", "ง) เพราะชุดข้อมูลทดสอบมีขนาดเล็กเกินไปเสมอ"],
+                        correctAnswer: 1,
+                        explanation: "Testing Dataset ต้องถูกเก็บไว้จนถึงขั้นตอนประเมินผลขั้นสุดท้าย เพื่อป้องกันความลำเอียงและวัดความสามารถในการสรุปผลทั่วไป (Generalization)"
+                    },
+                    {
+                        question: "5. หากโมเดลมี Training Accuracy 99% แต่มี Validation Accuracy เพียง 80% ปัญหานี้เรียกว่าอะไร?",
+                        options: ["ก) Underfitting", "ข) Overfitting", "ค) Generalization", "ง) Data Minimization"],
+                        correctAnswer: 1,
+                        explanation: "Overfitting คือการที่โมเดลจดจำข้อมูลฝึกมากเกินไปจนทายข้อมูลที่ไม่เคยพบได้ไม่ดี"
+                    },
+                    {
+                        question: "6. กรณีใดจัดเป็น False Positive (FP) ในการจำแนกอีเมลสแปม (กำหนดให้ Positive = อีเมลสแปม)?",
+                        options: ["ก) อีเมลปกติ แต่ระบบทายว่าเป็นสแปม", "ข) อีเมลสแปม และระบบทายว่าเป็นสแปม", "ค) อีเมลปกติ และระบบทายว่าเป็นอีเมลปกติ", "ง) อีเมลสแปม แต่ระบบทายว่าเป็นอีเมลปกติ"],
+                        correctAnswer: 0,
+                        explanation: "FP คือกรณีที่ข้อมูลจริงเป็น Negative แต่โมเดลทำนายว่าเป็น Positive (การเตือนผิดพลาด หรือ Over-detection)"
+                    },
+                    {
+                        question: "7. สูตรของ Precision คือข้อใด?",
+                        options: ["ก) TP / (TP + FN)", "ข) TP / (TP + FP)", "ค) (TP + TN) / (TP + TN + FP + FN)", "ง) TN / (TN + FP)"],
+                        correctAnswer: 1,
+                        explanation: "Precision วัดสัดส่วนของตัวที่ทายว่าเป็นบวก แล้วเป็นบวกจริง"
+                    },
+                    {
+                        question: "8. ในงานคัดกรองโรคร้ายแรงที่ไม่ต้องการให้มีผู้ป่วยหลุดรอด (ลด False Negative) ควรให้ความสำคัญกับค่าใดมากที่สุด?",
+                        options: ["ก) Precision", "ข) Recall (Sensitivity)", "ค) Specificity", "ง) Mean Squared Error"],
+                        correctAnswer: 1,
+                        explanation: "Recall หรือ Sensitivity มีสูตรคือ TP / (TP + FN) การทำให้ Recall สูงจะช่วยลด False Negative"
+                    },
+                    {
+                        question: "9. ค่า F1-score คือค่าเฉลี่ยประเภทใดระหว่าง Precision และ Recall?",
+                        options: ["ก) มัธยฐาน (Median)", "ข) ค่าเฉลี่ยเลขคณิต (Arithmetic Mean)", "ค) ค่าเฉลี่ยฮาร์มอนิก (Harmonic Mean)", "ง) ค่าเฉลี่ยเรขาคณิต (Geometric Mean)"],
+                        correctAnswer: 2,
+                        explanation: "F1-score คำนวณจากค่าเฉลี่ยฮาร์มอนิกของ Precision และ Recall"
+                    },
+                    {
+                        question: "10. ตัวชี้วัดใดใช้สำหรับประเมินโมเดลการถดถอย (Regression)?",
+                        options: ["ก) Accuracy", "ข) Confusion Matrix", "ค) Mean Absolute Error (MAE)", "ง) Area Under the Curve (AUC)"],
+                        correctAnswer: 2,
+                        explanation: "MAE, MSE และ RMSE เป็นตัวชี้วัดความคลาดเคลื่อนสำหรับงาน Regression"
+                    }
+                ]
+            },
+            special_ch7: {
+                title: "Special CH: Decision Tree (บทที่ 7)",
+                questions: [
+                    {
+                        question: "11. องค์ประกอบใดของต้นไม้ตัดสินใจที่แสดงผลลัพธ์การทำนายสุดท้ายโดยไม่มีการแบ่งข้อมูลต่อ?",
+                        options: ["ก) Root Node", "ข) Internal Node", "ค) Branch", "ง) Leaf Node"],
+                        correctAnswer: 3,
+                        explanation: "Leaf Node (โหนดใบ) เป็นจุดสิ้นสุดของโครงสร้างที่แสดงคลาสหรือค่าที่ทำนาย"
+                    },
+                    {
+                        question: "12. ความหมายของ Purity (ความบริสุทธิ์) ในต้นไม้ตัดสินใจคือข้อใด?",
+                        options: ["ก) โหนดมีจำนวนตัวอย่างข้อมูลมากที่สุด", "ข) โหนดประกอบด้วยข้อมูลจากคลาสเดียวกันมากที่สุด", "ค) ความลึกของต้นไม้น้อยที่สุด", "ง) โหนดมีค่าตัวแปรสูญหายเป็นศูนย์"],
+                        correctAnswer: 1,
+                        explanation: "ความบริสุทธิ์สูงหมายถึงข้อมูลภายในโหนดนั้นถูกจัดกลุ่มจนเป็นคลาสเดียวกันทั้งหมดหรือเกือบทั้งหมด"
+                    },
+                    {
+                        question: "13. การจำแนกประเภทดอกไม้ออกเป็น 3 สายพันธุ์ จัดเป็นปัญหาแบบใด?",
+                        options: ["ก) Binary Classification", "ข) Multiclass Classification", "ค) Regression", "ง) Reinforcement Learning"],
+                        correctAnswer: 1,
+                        explanation: "การจำแนกตั้งแต่ 3 คลาสขึ้นไปจัดเป็น Multiclass Classification"
+                    },
+                    {
+                        question: "14. ฟังก์ชันเกณฑ์ (Criterion Function) ที่นิยมใช้เป็นค่าเริ่มต้นในไลบรารี Scikit-learn สำหรับสร้างต้นไม้จำแนกประเภทคือข้อใด?",
+                        options: ["ก) Mean Squared Error", "ข) Cross Entropy", "ค) Gini Impurity", "ง) Softmax"],
+                        correctAnswer: 2,
+                        explanation: "Gini Impurity เป็น Criterion เริ่มต้นของอัลกอริทึม CART ใน Scikit-learn"
+                    },
+                    {
+                        question: "15. ความแตกต่างหลักระหว่าง Loss Function ของ Neural Network กับ Criterion Function ของ Decision Tree คืออะไร?",
+                        options: ["ก) Criterion Function ใช้ Gradient Descent ในการปรับค่าพารามิเตอร์", "ข) Loss Function ใช้สำหรับเลือกจุดตัดของข้อมูล", "ค) Criterion Function ใช้เพื่อเลือกคุณลักษณะและจุดแบ่งข้อมูลที่ดีที่สุดโดยไม่มี Gradient Descent", "ง) ไม่มีความแตกต่างกัน ทำงานเหมือนกันทุกประการ"],
+                        correctAnswer: 2,
+                        explanation: "Criterion Function ใช้ตัดสินใจแบ่งโหนดแบบ Recursive Partitioning โดยไม่มีการหาอนุพันธ์หรือ Gradient Descent"
+                    },
+                    {
+                        question: "16. ข้อใดเป็นเทคนิค Pre-pruning เพื่อลดการเกิด Overfitting ของต้นไม้ตัดสินใจ?",
+                        options: ["ก) การสร้างต้นไม้ให้เต็มที่แล้วค่อยตัดกิ่งทิ้ง", "ข) การกำหนดค่าความลึกสูงสุดของต้นไม้ (max_depth)", "ค) การทำ One-Hot Encoding", "ง) การเพิ่มข้อมูลตัวอย่างที่มีสัญญาณรบกวน"],
+                        correctAnswer: 1,
+                        explanation: "การกำหนด max_depth หรือ min_samples_split ตั้งแต่ก่อนฝึกจัดเป็น Pre-pruning (Early Stopping)"
+                    },
+                    {
+                        question: "17. ในงาน Decision Tree Regression ผลลัพธ์สุดท้ายที่โหนดใบ (Leaf Node) คำนวณมาจากค่าใดของข้อมูลในโหนดนั้น?",
+                        options: ["ก) ฐานนิยม (Mode)", "ข) มัธยฐาน (Median)", "ค) ค่าเฉลี่ย (Mean)", "ง) ค่าสูงสุด (Maximum)"],
+                        correctAnswer: 2,
+                        explanation: "สำหรับ Regression โหนดใบจะใช้ค่าเฉลี่ยของข้อมูลเป้าหมายในกลุ่มนั้นเป็นค่าพยากรณ์"
+                    },
+                    {
+                        question: "18. ข้อใดคือข้อดีที่โดดเด่นของ Decision Tree เมื่อเทียบกับ Deep Neural Network?",
+                        options: ["ก) แม่นยำกับข้อมูลภาพสูงกว่าเสมอ", "ข) สามารถอธิบายเหตุผลและเส้นทางการตัดสินใจได้ง่าย (Explainability)", "ค) ไม่มีทางเกิด Overfitting", "ง) โครงสร้างไม่เปลี่ยนแปลงแม้ข้อมูลจะเปลี่ยน"],
+                        correctAnswer: 1,
+                        explanation: "Decision Tree เห็นเส้นทางการตัดสินใจทุกขั้นจึงอธิบายได้ง่าย (Explainable AI)"
+                    },
+                    {
+                        question: "19. หากนำฟีเจอร์ \"รหัสนักศึกษา (Student ID)\" มาใช้สร้างโมเดลพยากรณ์เกรด จะเกิดผลเสียอย่างไร?",
+                        options: ["ก) ทำให้โมเดลรันเร็วขึ้นผิดปกติ", "ข) ID ไม่มีผลต่อความสามารถจริง และนำไปสู่การจดจำข้อมูลที่ผิดพลาด", "ค) ทำให้เกิดปัญหา Data Imbalance", "ง) ไม่มีผลเสีย สามารถใช้ได้ดี"],
+                        correctAnswer: 1,
+                        explanation: "ID มีหน้าที่แค่ระบุตัวตน ไม่ได้แสดงถึงความสามารถในการเรียน จึงไม่ควรนำมาใช้เป็น Feature"
+                    },
+                    {
+                        question: "20. Data Leakage ในตัวอย่างการสร้างโมเดลทำนายเกรดก่อนสอบปลายภาค หมายถึงข้อใด?",
+                        options: ["ก) ข้อมูลนักศึกษาหายไปบางส่วน (Missing Value)", "ข) การนำคะแนนสอบปลายภาค (Final) ซึ่งยังไม่เกิดขึ้นจริงมาเป็นฟีเจอร์นำเข้า", "ค) การที่ข้อมูลเกรด A มีน้อยกว่าเกรดอื่น", "ง) การใช้ Decision Tree แทน Neural Network"],
+                        correctAnswer: 1,
+                        explanation: "การนำข้อมูลที่ยังไม่เกิดขึ้นในสถานการณ์จริงมาใช้ฝึกโมเดลจัดเป็น Data Leakage"
+                    }
+                ]
+            },
+            special_ch8: {
+                title: "Special CH: ANN & Perceptron (บทที่ 8)",
+                questions: [
+                    {
+                        question: "21. ส่วนประกอบใดของเซลล์ประสาทชีวภาพที่ทำหน้าที่เปรียบเสมือนอินพุต (Input) รับสัญญาณ?",
+                        options: ["ก) Axon", "ข) Cell Body", "ค) Dendrite", "ง) Synapse"],
+                        correctAnswer: 2,
+                        explanation: "Dendrite ทำหน้าที่รับสัญญาณประสาทเข้าสู่ตัวเซลล์"
+                    },
+                    {
+                        question: "22. ค่าผลรวมก่อนการกระตุ้น (Weighted Sum) มีสูตรคณิตศาสตร์พื้นฐานตามข้อใด?",
+                        options: ["ก) z = ∑(x_i + w_i) × b", "ข) z = ∑(x_i × w_i) + b", "ค) z = max(x_i, w_i) + b", "ง) z = (∑x_i / ∑w_i) + b"],
+                        correctAnswer: 1,
+                        explanation: "ผลรวมแบบถ่วงน้ำหนักคือการนำอินพุตคูณน้ำหนักแล้วบวกด้วยไบแอส"
+                    },
+                    {
+                        question: "23. ฟังก์ชันกระตุ้นใดมีช่วงของผลลัพธ์ (Output Range) อยู่ระหว่าง 0 ถึง 1 และนิยมใช้กับปัญหา Binary Classification ใน Output Layer?",
+                        options: ["ก) ReLU", "ข) Sigmoid", "ค) Step Function", "ง) Tanh"],
+                        correctAnswer: 1,
+                        explanation: "Sigmoid ให้ผลลัพธ์แบบต่อเนื่องช่วง (0, 1) จึงเหมาะกับการแปลงเป็นความน่าจะเป็นแบบสองกลุ่ม"
+                    },
+                    {
+                        question: "24. ข้อดีหลักของฟังก์ชันกระตุ้น ReLU (f(x) = max(0, x)) คืออะไร?",
+                        options: ["ก) ผลลัพธ์อยู่ในช่วง -1 ถึง 1 เสมอ", "ข) รูปแบบการคำนวณไม่ซับซ้อนและช่วยลดปัญหา Vanishing Gradient", "ค) แก้ปัญหา dying ReLU ได้สมบูรณ์แบบ", "ง) มีความต่อเนื่องแบบเส้นโค้งรูปตัว S"],
+                        correctAnswer: 1,
+                        explanation: "ReLU คำนวณง่ายและมีความชันคงที่สำหรับค่าบวก จึงลดปัญหาการหายไปของเกรเดียนต์"
+                    },
+                    {
+                        question: "25. ฟังก์ชันกระตุ้นใดที่แปลงค่าตัวเลขของหลายคลาสให้กลายเป็นความน่าจะเป็นและมีผลรวมเท่ากับ 1 เสมอ?",
+                        options: ["ก) Softmax", "ข) Linear", "ค) Leaky ReLU", "ง) Sigmoid"],
+                        correctAnswer: 0,
+                        explanation: "Softmax นิยมใช้ใน Output Layer สำหรับ Multiclass Classification"
+                    },
+                    {
+                        question: "26. ข้อจำกัดสำคัญที่สุดของเพอร์เซปตรอนแบบชั้นเดียว (Single Layer Perceptron) คืออะไร?",
+                        options: ["ก) ไม่สามารถคำนวณค่าตัวเลขทศนิยมได้", "ข) จำแนกได้เฉพาะข้อมูลที่แบ่งแยกได้ด้วยเส้นตรง (Linearly Separable) เท่านั้น", "ค) ไม่สามารถมี Bias ได้", "ง) มีความเร็วในการคำนวณช้ามาก"],
+                        correctAnswer: 1,
+                        explanation: "เพอร์เซปตรอนชั้นเดียวสร้างได้เฉพาะเส้นแบ่งเชิงเส้น จึงแก้ปัญหาอย่าง XOR ไม่ได้"
+                    },
+                    {
+                        question: "27. ในปัญหาตรรกะ XOR เหตุใดเพอร์เซปตรอนแบบชั้นเดียวจึงไม่สามารถแก้ปัญหาได้?",
+                        options: ["ก) ข้อมูลมีอินพุตมากเกินไป", "ข) ผลลัพธ์ 1 และ 0 อยู่สลับตำแหน่งทแยงมุมจนไม่สามารถลากเส้นตรงเส้นเดียวแบ่งได้", "ค) ฟังก์ชัน Step ไม่รองรับตรรกะ", "ง) มีค่า Loss สูงเกินไปเสมอ"],
+                        correctAnswer: 1,
+                        explanation: "XOR เป็นปัญหาแบบ Non-linearly Separable ข้อมูล 1 และ 0 สลับฝั่งกันในแนวทแยง"
+                    },
+                    {
+                        question: "28. กฎการปรับน้ำหนัก (Weight Update) ของ Perceptron อาศัยตัวแปรใดเป็นหลัก?",
+                        options: ["ก) w_new = w_old + (η × e × x_i)", "ข) w_new = w_old - (η × z)", "ค) w_new = w_old × e", "ง) w_new = w_old / η"],
+                        correctAnswer: 0,
+                        explanation: "การอัปเดตใช้ผลคูณของ Learning Rate (η), ค่าความผิดพลาด (e = target - predict) และค่าอินพุต (x_i)"
+                    },
+                    {
+                        question: "29. โครงข่ายแบบ Feedforward Neural Network (FNN) มีลักษณะการไหลของข้อมูลอย่างไร?",
+                        options: ["ก) มีการวนซ้ำข้อมูลย้อนกลับมายังโหนดเดิม (Cycle)", "ข) ข้อมูลไหลไปข้างหน้าทิศทางเดียวจาก Input ผ่าน Hidden ไปยัง Output", "ค) ส่งข้อมูลสลับไปมาระหว่างเลเยอร์โดยไม่มีทิศทางแน่นอน", "ง) ประมวลผลจาก Output ย้อนกลับมายัง Input เท่านั้น"],
+                        correctAnswer: 1,
+                        explanation: "FNN มีการไหลของข้อมูลในทิศทางเดียวไปข้างหน้าโดยไม่มีลูปย้อนกลับ"
+                    },
+                    {
+                        question: "30. การเพิ่ม Hidden Layer ในโครงข่ายประสาทเทียมมีประโยชน์หลักในเรื่องใด?",
+                        options: ["ก) ทำให้ใช้หน่วยความจำน้อยลง", "ข) ช่วยให้โมเดลสามารถเรียนรู้การแปลงความสัมพันธ์ของข้อมูลที่ไม่เป็นเชิงเส้นและซับซ้อนขึ้นได้", "ค) ป้องกันการเกิด Overfitting ได้อย่างสิ้นเชิง", "ง) ลดเวลาในการฝึกสอนโมเดล"],
+                        correctAnswer: 1,
+                        explanation: "การมีชั้นซ่อนช่วยให้โครงข่ายสามารถสร้างขอบเขตการตัดสินใจที่ซับซ้อนขึ้นตามลำดับ"
+                    }
+                ]
+            },
+            special_ch9: {
+                title: "Special CH: CNN & GenAI (บทที่ 9)",
+                questions: [
+                    {
+                        question: "31. เหตุใด Fully Connected Network จึงไม่เหมาะกับการประมวลผลข้อมูลภาพขนาดใหญ่?",
+                        options: ["ก) คำนวณค่าพิกเซลไม่ได้", "ข) ทำลายโครงสร้างเชิงพื้นที่ (Spatial Structure) และมีพารามิเตอร์ (Weight) มากเกินไปจน Overfit ง่าย", "ค) ไม่สามารถใช้ร่วมกับ Activation Function ได้", "ง) ทำให้ภาพสูญเสียสีสันทั้งหมด"],
+                        correctAnswer: 1,
+                        explanation: "การแปลงภาพเป็น 1D Vector ทำลายมิติเชิงตำแหน่ง และก่อให้เกิดค่าน้ำหนักมหาศาล"
+                    },
+                    {
+                        question: "32. แนวคิด Parameter Sharing (Weight Sharing) ใน CNN หมายถึงอะไร?",
+                        options: ["ก) การใช้ตัวประมวลผลหลายตัวแชร์หน่วยความจำร่วมกัน", "ข) การใช้ Filter ชุดเดียวกันเลื่อนไปตรวจสอบทุกตำแหน่งของภาพ", "ค) การแชร์ข้อมูลภาพระหว่างโมเดลต่าง ๆ", "ง) การใช้พารามิเตอร์ของ Hidden Layer กับ Output Layer ร่วมกัน"],
+                        correctAnswer: 1,
+                        explanation: "CNN นำ Filter ขนาดเล็กชุดเดียวกันมาเลื่อนตรวจจับรูปแบบทั่วทั้งภาพ"
+                    },
+                    {
+                        question: "33. หน้าที่หลักของ Pooling Layer (เช่น Max Pooling) ในโครงข่าย CNN คือข้อใด?",
+                        options: ["ก) สกัดคุณลักษณะของเส้นและขอบ", "ข) ลดขนาดของ Feature Map เพื่อลดการคำนวณและลด Overfitting", "ค) ทำนายคลาสสุดท้ายของภาพ", "ง) แปลงภาพขาวดำให้เป็นภาพสี"],
+                        correctAnswer: 1,
+                        explanation: "Pooling มีหน้าที่สรุปและลดขนาดมิติของข้อมูลเพื่อลดภาระการประมวลผล"
+                    },
+                    {
+                        question: "34. การสกัดคุณลักษณะแบบลำดับชั้น (Hierarchical Feature Learning) ของ CNN มีลักษณะอย่างไร?",
+                        options: ["ก) ชั้นแรกเรียนรู้ภาพรวมทั้งภาพ แล้วชั้นลึกค่อยตัดเป็นเส้น", "ข) ชั้นแรกตรวจจับเส้นและขอบ แล้วชั้นลึกขึ้นจะตรวจจับชิ้นส่วนและรูปทรงที่ซับซ้อนขึ้น", "ค) ทุกชั้นเรียนรู้รูปแบบเดียวกันทั้งหมด", "ง) ไม่มีการจัดลำดับความซับซ้อน"],
+                        correctAnswer: 1,
+                        explanation: "CNN เริ่มต้นจากระดับ Low-level (ขอบ, เส้น) ไปสู่ Mid-level (พื้นผิว) จนถึง High-level (วัตถุ)"
+                    },
+                    {
+                        question: "35. เทคนิค Transfer Learning มีข้อดีอย่างไรในการพัฒนาโมเดล Computer Vision?",
+                        options: ["ก) ไม่จำเป็นต้องมีชุดข้อมูลทดสอบ", "ข) สามารถนำโมเดลที่ฝึกมาดีแล้ว (Pretrained Model) มาปรับใช้ ทำให้ประหยัดเวลาและใช้ข้อมูลน้อยลง", "ค) ไม่ต้องใช้หน่วยประมวลผล GPU", "ง) โมเดลจะไม่มีข้อผิดพลาด 100%"],
+                        correctAnswer: 1,
+                        explanation: "Transfer Learning ช่วยให้นำ Feature ที่เรียนรู้จากชุดข้อมูลขนาดใหญ่มาใช้กับงานใหม่ได้ทันที"
+                    },
+                    {
+                        question: "36. ความแตกต่างระหว่าง AI แบบเดิม (Discriminative) กับ Generative AI คืออะไร?",
+                        options: ["ก) AI แบบเดิมสร้างเนื้อหาใหม่ได้ดีกว่า", "ข) AI แบบเดิมเน้นวิเคราะห์ จำแนก หรือทำนาย ส่วน Generative AI เน้นการสร้างข้อมูลใหม่จากรูปแบบที่เรียนรู้", "ค) Generative AI ไม่จำเป็นต้องใช้ข้อมูลในการฝึกสอน", "ง) Generative AI ไม่มีความเสี่ยงเรื่องความผิดพลาด"],
+                        correctAnswer: 1,
+                        explanation: "Discriminative ทำหน้าที่แยกแยะ/ตัดสินใจ ส่วน Generative ทำหน้าที่สร้างคอนเทนต์ใหม่"
+                    },
+                    {
+                        question: "37. สถาปัตยกรรมของ Generative Adversarial Network (GAN) ประกอบด้วย 2 ส่วนสำคัญที่แข่งขันกันคืออะไร?",
+                        options: ["ก) Encoder และ Decoder", "ข) Generator และ Discriminator", "ค) Attention และ Self-Attention", "ง) Transformer และ Diffusion"],
+                        correctAnswer: 1,
+                        explanation: "Generator สร้างข้อมูลขึ้นมา ส่วน Discriminator ทำหน้าที่ตรวจสอบว่าเป็นของจริงหรือของปลอม"
+                    },
+                    {
+                        question: "38. โมเดลประเภทใดทำงานโดยการเพิ่มสัญญาณรบกวน (Noise) ลงในภาพ แล้วเรียนรู้กระบวนการย้อนกลับเพื่อถอด Noise ออกจนได้ภาพใหม่?",
+                        options: ["ก) Recurrent Neural Network", "ข) Variational Autoencoder (VAE)", "ค) Diffusion Model", "ง) Decision Tree"],
+                        correctAnswer: 2,
+                        explanation: "Diffusion Model เรียนรู้กระบวนการ Denoising เพื่อสร้างภาพคุณภาพสูงจากสัญญาณรบกวน"
+                    },
+                    {
+                        question: "39. หน่วยข้อมูลย่อยที่ Large Language Model (LLM) ใช้ในการประมวลผลและสร้างข้อความเรียกว่าอะไร?",
+                        options: ["ก) Pixel", "ข) Token", "ค) Neuron", "ง) Epoch"],
+                        correctAnswer: 1,
+                        explanation: "ข้อความจะถูกแบ่งเป็นหน่วยย่อยเรียกว่า Token ผ่านกระบวนการ Tokenization"
+                    },
+                    {
+                        question: "40. ปรากฏการณ์ที่โมเดลภาษาขนาดใหญ่สร้างข้อมูลคลาดเคลื่อนหรือไม่เป็นความจริง แต่เขียนด้วยสำนวนที่ดูน่าเชื่อถือ เรียกว่าอะไร?",
+                        options: ["ก) Data Drift", "ข) Overfitting", "ค) Hallucination", "ง) Feedback Bias"],
+                        correctAnswer: 2,
+                        explanation: "อาการ Hallucination คือการที่ AI สร้างข้อมูลที่ไม่มีอยู่จริงขึ้นมาอย่างมั่นใจ"
+                    }
+                ]
+            },
+            special_ch10: {
+                title: "Special CH: AI Ethics (บทที่ 10)",
+                questions: [
+                    {
+                        question: "41. องค์การระหว่างประเทศใดเป็นผู้ประกาศคำแนะนำว่าด้วยจริยธรรมของปัญญาประดิษฐ์ 10 มิติ ในปี ค.ศ. 2021?",
+                        options: ["ก) WHO", "ข) IEEE", "ค) UNESCO", "ง) ISO"],
+                        correctAnswer: 2,
+                        explanation: "UNESCO ได้รับรองมาตรฐานด้านจริยธรรม AI โดยสมาชิก 194 ประเทศ"
+                    },
+                    {
+                        question: "42. หลักการจริยธรรมของ UNESCO มิติใดที่ระบุว่า \"ห้ามใช้ AI เพื่อการจัดอันดับทางสังคม (Social Scoring) หรือสอดส่องประชาชน\"?",
+                        options: ["ก) มิติความปลอดภัย", "ข) มิติความสมเหตุสมผลและการไม่ก่อให้เกิดอันตราย (Proportionality and Do No Harm)", "ค) มิติความโปร่งใส", "ง) มิติความยั่งยืน"],
+                        correctAnswer: 1,
+                        explanation: "มิติที่ 1 กำหนดเรื่องความได้สัดส่วน วัตถุประสงค์ชอบธรรม และห้ามสอดส่องละเมิดสิทธิ"
+                    },
+                    {
+                        question: "43. กรณีศึกษาของ Amazon (2018) ที่ระบบคัดเลือกผู้สมัครงานให้คะแนนผู้หญิงต่ำกว่าผู้ชาย เกิดจากความลำเอียงรูปแบบใดเป็นหลัก?",
+                        options: ["ก) Algorithm Bias", "ข) Data Bias (ข้อมูลในอดีตสะท้อนว่ามีผู้ชายทำงานมากกว่า)", "ค) Feedback Bias", "ง) Cyber Attack"],
+                        correctAnswer: 1,
+                        explanation: "เกิดจากข้อมูลฝึกย้อนหลัง 10 ปีมีสัดส่วนผู้ชายเป็นส่วนใหญ่ โมเดลจึงเรียนรู้ความลำเอียงเดิมมาใช้"
+                    },
+                    {
+                        question: "44. \"ความสามารถในการอธิบาย (Explainability)\" แตกต่างจาก \"ความโปร่งใส (Transparency)\" อย่างไร?",
+                        options: ["ก) เหมือนกันทุกประการ", "ข) ความโปร่งใสคือการเปิดเผยว่าระบบทำงานอย่างไร ส่วนความสามารถในการอธิบายคือการบอกเหตุผลว่าทำไมถึงได้ผลลัพธ์นั้นในกรณีเฉพาะ", "ค) ความโปร่งใสใช้กับ Deep Learning เท่านั้น", "ง) ความสามารถในการอธิบายเน้นที่การเข้ารหัสข้อมูล"],
+                        correctAnswer: 1,
+                        explanation: "Transparency คือการเปิดเผยกลไกภาพรวม ส่วน Explainability คือการชี้แจงเหตุผลเบื้องหลังการตัดสินใจรายบุคคล"
+                    },
+                    {
+                        question: "45. แนวคิด \"Human-in-the-loop\" มีจุดมุ่งหมายสำคัญเพื่ออะไร?",
+                        options: ["ก) ลดต้นทุนการจ้างงานพนักงาน", "ข) ให้มนุษย์มีบทบาทในการตรวจสอบและตัดสินใจขั้นสุดท้าย โดยเฉพาะในระบบที่มีผลกระทบสูง", "ค) ให้มนุษย์เขียนโค้ดทั้งหมดโดยไม่ใช้โมเดล", "ง) ตัดสินใจแทน AI ในทุกงานทั่วไป"],
+                        correctAnswer: 1,
+                        explanation: "ป้องกันการปล่อยให้ระบบตัดสินใจโดยอัตโนมัติ 100% ในงานวิกฤต เช่น การแพทย์และกฎหมาย"
+                    },
+                    {
+                        question: "46. พฤติกรรมที่ผู้ใช้งานเชื่อมั่นและยอมรับผลลัพธ์ของ AI โดยไม่ตรวจสอบความถูกต้อง เรียกว่าอะไร?",
+                        options: ["ก) Adversarial Bias", "ข) Automation Bias", "ค) Confirmation Bias", "ง) Selection Bias"],
+                        correctAnswer: 1,
+                        explanation: "Automation Bias เป็นความเสี่ยงที่คนพึ่งพาและไว้ใจระบบอัตโนมัติมากเกินไป"
+                    },
+                    {
+                        question: "47. วัตถุประสงค์หลักของการประเมินผลกระทบทางจริยธรรมปัญญาประดิษฐ์ (EIA) คืออะไร?",
+                        options: ["ก) เพื่อตัดสินลงโทษและสั่งปรับองค์กรที่ใช้ AI", "ข) ไม่ได้ตัดสินว่า \"ผ่าน\" หรือ \"ไม่ผ่าน\" แต่ช่วยให้เห็นภาพผลกระทบอย่างเป็นระบบเพื่อใช้ประกอบการตัดสินใจ", "ค) วัดค่าความแม่นยำ (Accuracy) ของอัลกอริทึมให้เกิน 95%", "ง) ทดแทนกระบวนการตรวจสอบบัญชีประจำปี"],
+                        correctAnswer: 1,
+                        explanation: "EIA เป็นเครื่องมือเชิงกระบวนการที่ช่วยชั่งน้ำหนักผลกระทบทั้งบวกและลบก่อนใช้งานจริง"
+                    },
+                    {
+                        question: "48. เกณฑ์การวิเคราะห์ผลกระทบ 5 ด้านของกระบวนการ EIA ได้แก่อะไรบ้าง?",
+                        options: ["ก) Cost, Time, Scope, Quality, Risk", "ข) ระดับของผลกระทบ, ผู้ได้รับผลกระทบ, ระยะเวลา, ความสามารถในการเยียวยา, โอกาสเกิด", "ค) TP, TN, FP, FN, Accuracy", "ง) Input, Hidden, Output, Weight, Bias"],
+                        correctAnswer: 1,
+                        explanation: "เกณฑ์ 5 ด้านใช้เปรียบเทียบผลกระทบและบันทึกเหตุผลประกอบการตัดสินใจ"
+                    },
+                    {
+                        question: "49. เกณฑ์ \"ความสามารถในการเยียวยา (Remediability)\" ถูกนำมาใช้ประเมินกับผลกระทบประเภทใด?",
+                        options: ["ก) ผลกระทบเชิงบวกเท่านั้น", "ข) ผลกระทบเชิงลบเท่านั้น", "ค) ประเมินได้ทั้งผลกระทบเชิงบวกและลบเท่ากัน", "ง) ใช้เฉพาะกับการละเมิดลิขสิทธิ์"],
+                        correctAnswer: 1,
+                        explanation: "การเยียวยา (Remediability) หมายถึงความเสียหายที่เกิดขึ้นสามารถย้อนกลับหรือชดเชยได้เพียงใด จึงใช้เฉพาะผลกระทบเชิงลบ"
+                    },
+                    {
+                        question: "50. ช่วงเวลาใดที่แนะนำให้ดำเนินการประเมิน EIA มากที่สุดตลอดวงจรชีวิตของระบบ AI?",
+                        options: ["ก) หลังจากระบบทำงานผิดพลาดจนเกิดความเสียหายแล้ว", "ข) ช่วงก่อนนำปัญญาประดิษฐ์ไปใช้งาน (Before Deployment)", "ค) เมื่อปลดระวางระบบออกจากองค์กร", "ง) เมื่อมีผู้ใช้ร้องเรียนเข้ามาเกิน 1,000 คน"],
+                        correctAnswer: 1,
+                        explanation: "การประเมินตั้งแต่ช่วงออกแบบและก่อนนำไปใช้จริงช่วยป้องกันและวางมาตรการลดผลกระทบได้ดีที่สุด"
+                    }
+                ]
+            }
+        };
+
+        let currentChapterKey = 'chapter6';
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let hasAnswered = false;
+
+        const sidebarNav = document.getElementById('sidebar-nav');
+        const quizContainer = document.getElementById('quiz-container');
+        const summaryContainer = document.getElementById('summary-container');
+        const progressContainer = document.getElementById('progress-container');
+        const chapterTitle = document.getElementById('chapter-title');
+        const progressText = document.getElementById('progress-text');
+        const questionText = document.getElementById('question-text');
+        const questionHtml = document.getElementById('question-html');
+        const optionsContainer = document.getElementById('options-container');
+        const explanationContainer = document.getElementById('explanation-container');
+        const explanationText = document.getElementById('explanation-text');
+        const nextBtn = document.getElementById('next-btn');
+        
+        function initQuizApp() {
+            sidebarNav.innerHTML = '';
+            Object.keys(quizData).forEach(key => {
+                const btn = document.createElement('button');
+                btn.className = `nav-btn w-full text-left px-4 py-3 rounded-xl transition-all duration-200 font-medium whitespace-nowrap md:whitespace-normal flex-shrink-0 ${key === currentChapterKey ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`;
+                btn.innerText = quizData[key].title;
+                btn.onclick = () => loadChapter(key);
+                btn.id = `nav-${key}`;
+                sidebarNav.appendChild(btn);
+            });
+
+            nextBtn.onclick = handleNext;
+            document.getElementById('retry-btn').onclick = () => loadChapter(currentChapterKey);
+
+            loadChapter(currentChapterKey);
+        }
+
+        function loadChapter(chapterKey) {
+            currentChapterKey = chapterKey;
+            currentQuestionIndex = 0;
+            score = 0;
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = 'nav-btn w-full text-left px-4 py-3 rounded-xl transition-all duration-200 font-medium whitespace-nowrap md:whitespace-normal flex-shrink-0 text-slate-400 hover:bg-slate-800 hover:text-slate-200';
+            });
+            const activeBtn = document.getElementById(`nav-${chapterKey}`);
+            if (activeBtn) {
+                activeBtn.className = 'nav-btn w-full text-left px-4 py-3 rounded-xl transition-all duration-200 font-medium whitespace-nowrap md:whitespace-normal flex-shrink-0 bg-indigo-600 text-white shadow-md';
+            }
+
+            chapterTitle.innerText = quizData[chapterKey].title;
+            
+            quizContainer.classList.remove('hidden');
+            progressContainer.classList.remove('hidden');
+            summaryContainer.classList.add('hidden');
+            quizContainer.classList.add('flex');
+
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            hasAnswered = false;
+            nextBtn.classList.add('hidden');
+            nextBtn.disabled = true;
+            explanationContainer.classList.add('hidden');
+            
+            const chapterData = quizData[currentChapterKey];
+            const q = chapterData.questions[currentQuestionIndex];
+            
+            progressText.innerText = `Question ${currentQuestionIndex + 1} of ${chapterData.questions.length}`;
+            questionText.innerText = q.question;
+
+            if (q.questionHTML) {
+                questionHtml.innerHTML = q.questionHTML;
+                questionHtml.classList.remove('hidden');
+            } else {
+                questionHtml.innerHTML = '';
+                questionHtml.classList.add('hidden');
+            }
+
+            optionsContainer.innerHTML = '';
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn w-full text-left px-5 py-4 rounded-xl border-2 border-slate-200 text-slate-700 font-medium transition-all duration-200 hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none';
+                btn.innerText = opt;
+                btn.onclick = () => selectOption(idx, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(selectedIndex, selectedBtn) {
+            if (hasAnswered) return;
+            hasAnswered = true;
+
+            const chapterData = quizData[currentChapterKey];
+            const q = chapterData.questions[currentQuestionIndex];
+            const isCorrect = selectedIndex === q.correctAnswer;
+
+            if (isCorrect) {
+                score++;
+                selectedBtn.classList.remove('border-slate-200', 'hover:border-indigo-400', 'hover:bg-indigo-50', 'text-slate-700');
+                selectedBtn.classList.add('border-green-500', 'bg-green-500', 'text-white', 'shadow-md');
+            } else {
+                selectedBtn.classList.remove('border-slate-200', 'hover:border-indigo-400', 'hover:bg-indigo-50', 'text-slate-700');
+                selectedBtn.classList.add('border-red-500', 'bg-red-500', 'text-white', 'shadow-md');
+            }
+
+            const allBtns = optionsContainer.querySelectorAll('.option-btn');
+            allBtns.forEach((btn, idx) => {
+                btn.disabled = true;
+                btn.classList.remove('hover:border-indigo-400', 'hover:bg-indigo-50', 'cursor-pointer');
+                btn.classList.add('cursor-not-allowed');
+                
+                if (!isCorrect && idx === q.correctAnswer) {
+                    btn.classList.remove('border-slate-200', 'text-slate-700');
+                    btn.classList.add('border-green-500', 'bg-green-100', 'text-green-800');
+                }
+                
+                if (idx !== selectedIndex && idx !== q.correctAnswer) {
+                    btn.classList.add('opacity-50');
+                }
+            });
+
+            if (q.explanation) {
+                explanationText.innerText = q.explanation;
+                explanationContainer.classList.remove('hidden');
+            }
+
+            nextBtn.classList.remove('hidden');
+            nextBtn.disabled = false;
+        }
+
+        function handleNext() {
+            const chapterData = quizData[currentChapterKey];
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex < chapterData.questions.length) {
+                renderQuestion();
+            } else {
+                showSummary();
+            }
+        }
+
+        function showSummary() {
+            quizContainer.classList.add('hidden');
+            quizContainer.classList.remove('flex');
+            progressContainer.classList.add('hidden');
+            summaryContainer.classList.remove('hidden');
+            summaryContainer.classList.add('flex');
+
+            document.getElementById('summary-chapter-title').innerText = quizData[currentChapterKey].title;
+            document.getElementById('score-display').innerText = score;
+            document.getElementById('total-display').innerText = quizData[currentChapterKey].questions.length;
+        }
+
+        // ==========================================
+        // SCRIPT ส่วนที่ 2: ระบบข้อเขียน
+        // ==========================================
+        function toggleSection(id) {
+            const el = document.getElementById(id);
+            const icon = document.getElementById('icon-' + id);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                if (icon) icon.classList.add('rotate-180');
+            } else {
+                el.classList.add('hidden');
+                if (icon) icon.classList.remove('rotate-180');
+            }
+        }
+
+        let allOpen = true;
+        function toggleAllSolutions() {
+            const solutionSections = ['sol-21', 'sol-22', 'sol-23', 'sol-24', 'sol-25', 'sol-26'];
+            allOpen = !allOpen;
+            solutionSections.forEach(id => {
+                const el = document.getElementById(id);
+                const icon = document.getElementById('icon-' + id);
+                if (allOpen) {
+                    el.classList.remove('hidden');
+                    if (icon) icon.classList.add('rotate-180');
+                } else {
+                    el.classList.add('hidden');
+                    if (icon) icon.classList.remove('rotate-180');
+                }
+            });
+            document.getElementById('toggleAllText').innerText = allOpen ? 'ซ่อนเฉลยทั้งหมด' : 'เปิดเฉลยทั้งหมด';
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('bg-sky-600', 'text-white', 'shadow-sm');
+                b.classList.add('text-slate-600', 'dark:text-slate-400');
+            });
+            const activeBtn = document.getElementById('tab-' + tabId);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-sky-600', 'text-white', 'shadow-sm');
+                activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+            }
+
+            const cards = {
+                'q21': 'card-q21',
+                'q22': 'card-q22',
+                'q23': 'card-q23',
+                'q24': 'card-q24',
+                'q25': 'card-q25',
+                'q26': 'card-q26'
+            };
+
+            if (tabId === 'all') {
+                Object.values(cards).forEach(cid => {
+                    document.getElementById(cid).classList.remove('hidden');
+                });
+            } else {
+                Object.entries(cards).forEach(([key, cid]) => {
+                    const cardEl = document.getElementById(cid);
+                    if (key === tabId) {
+                        cardEl.classList.remove('hidden');
+                        cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } else {
+                        cardEl.classList.add('hidden');
+                    }
+                });
+            }
+        }
+
+        // เริ่มต้นการทำงานทั้งหมดเมื่อโหลดหน้าเว็บ
+        window.addEventListener('DOMContentLoaded', () => {
+            initQuizApp();
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+
+            // Theme toggle สำหรับหน้าข้อเขียน
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            if (themeToggle && themeIcon) {
+                themeToggle.addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    const isDark = document.documentElement.classList.contains('dark');
+                    themeIcon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+                    lucide.createIcons();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
